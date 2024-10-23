@@ -3,30 +3,30 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Button } from 'reac
 import AddTodoModal from '../components/AddTodoModal';
 
 const generateTimeBlocks = () => {
-    const blocks = [];
-    let hour = 5; // Start at 5 AM
-    let minute = 0;
-  
-    for (let i = 0; i < 76; i++) { // 76 blocks for 15-minute increments starting from 5:00 AM to 12:00 AM
-      const startHour = `${hour.toString().padStart(2, '0')}`;
-      const startMinute = `${minute.toString().padStart(2, '0')}`;
-      const startTime = `${startHour}:${startMinute}`;
-  
-      minute += 15;
-      if (minute === 60) {
-        minute = 0;
-        hour += 1;
-      }
-      const endHour = `${hour.toString().padStart(2, '0')}`;
-      const endMinute = `${minute.toString().padStart(2, '0')}`;
-      const endTime = `${endHour}:${endMinute}`;
-  
-      const timeRange = `${startTime}-${endTime}`; // Format time as range
-  
-      blocks.push({ id: i.toString(), time: timeRange, title: '', description: '', priority: 'none' }); // Default priority is 'none'
+  const blocks = [];
+  let hour = 5; // Start at 5 AM
+  let minute = 0;
+
+  for (let i = 0; i < 76; i++) { // 76 blocks for 15-minute increments starting from 5:00 AM to 12:00 AM
+    const startHour = `${hour.toString().padStart(2, '0')}`;
+    const startMinute = `${minute.toString().padStart(2, '0')}`;
+    const startTime = `${startHour}:${startMinute}`;
+
+    minute += 15;
+    if (minute === 60) {
+      minute = 0;
+      hour += 1;
     }
-    return blocks;
-  };
+    const endHour = `${hour.toString().padStart(2, '0')}`;
+    const endMinute = `${minute.toString().padStart(2, '0')}`;
+    const endTime = `${endHour}:${endMinute}`;
+
+    const timeRange = `${startTime}-${endTime}`; // Format time as range
+
+    blocks.push({ id: i.toString(), time: timeRange, title: '', description: '', priority: 'none' }); // Default priority is 'none'
+  }
+  return blocks;
+};
 
 const TomorrowScreen = () => {
   const [blocks, setBlocks] = useState(generateTimeBlocks());
@@ -34,6 +34,34 @@ const TomorrowScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [isSelecting, setIsSelecting] = useState(false); // Selection mode toggle
   const [entryBlock, setEntryBlock] = useState(null); // Block selected in entry mode
+  const [history, setHistory] = useState([]); // To store previous states for undo
+  const [future, setFuture] = useState([]); // To store future states for restore
+
+  // Save current state to history before making changes
+  const saveHistory = () => {
+    setHistory([...history, blocks]);
+    setFuture([]); // Clear the future stack once a new action is performed
+  };
+
+  // Undo operation (revert to the last state in history)
+  const handleUndo = () => {
+    if (history.length > 0) {
+      setFuture([blocks, ...future]); // Save current state in future stack
+      const previousState = history[history.length - 1];
+      setHistory(history.slice(0, -1)); // Remove the last state from history
+      setBlocks(previousState); // Restore the last state
+    }
+  };
+
+  // Restore operation (restore the future state if any undo was performed)
+  const handleRestore = () => {
+    if (future.length > 0) {
+      setHistory([...history, blocks]); // Save current state to history
+      const nextState = future[0];
+      setFuture(future.slice(1)); // Remove the first state from future
+      setBlocks(nextState); // Restore the future state
+    }
+  };
 
   // Toggle between Select and Entry modes
   const toggleSelectMode = () => {
@@ -70,21 +98,23 @@ const TomorrowScreen = () => {
   // Split a block into smaller 5-minute increments
   const handleSplit = () => {
     if (selectedBlocks.length === 1) {
+      saveHistory(); // Save state before splitting
+
       const block = selectedBlocks[0];
       const [startTime, endTime] = block.time.split('-');
       let [startHour, startMinute] = startTime.split(':').map(Number);
       let [endHour, endMinute] = endTime.split(':').map(Number);
-  
+
       // Convert start and end times to total minutes since 00:00
       const startTotalMinutes = startHour * 60 + startMinute;
       const endTotalMinutes = endHour * 60 + endMinute;
       const totalMinutes = endTotalMinutes - startTotalMinutes; // Duration of block in minutes
-  
+
       // Calculate how many 5-minute blocks we need
       const numBlocks = totalMinutes / 5;
-  
+
       const newBlocks = [];
-  
+
       // Create new 5-minute blocks within the original time range
       for (let i = 0; i < numBlocks; i++) {
         const newStartTime = `${startHour.toString().padStart(2, '0')}:${startMinute
@@ -98,7 +128,7 @@ const TomorrowScreen = () => {
         const newEndTime = `${startHour.toString().padStart(2, '0')}:${startMinute
           .toString()
           .padStart(2, '0')}`;
-  
+
         newBlocks.push({
           id: `${block.id}-${i}`, // Use a unique id for each 5-minute block
           time: `${newStartTime}-${newEndTime}`,
@@ -107,20 +137,20 @@ const TomorrowScreen = () => {
           priority: 'none', // Default priority is 'none'
         });
       }
-  
+
       // Update the block list by replacing the original block with the split blocks
       const updatedBlocks = [
         ...blocks.slice(0, parseInt(block.id)),
         ...newBlocks,
         ...blocks.slice(parseInt(block.id) + 1),
       ];
-  
+
       // Reassign unique IDs to all blocks based on their index in the updated array
       const reassignedBlocks = updatedBlocks.map((block, index) => ({
         ...block,
         id: index.toString(), // Ensure unique ids for each block
       }));
-  
+
       setBlocks(reassignedBlocks);
       setSelectedBlocks([]); // Clear the selection after split
       setIsSelecting(false); // Automatically return to entry mode
@@ -128,44 +158,48 @@ const TomorrowScreen = () => {
   };
 
   const handleAddTodo = (newTask) => {
-  const updatedBlocks = blocks.map((block) =>
-    entryBlock && block.id === entryBlock.id
-      ? { ...block, ...newTask } // Update the block with the new task and priority
-      : block
-  );
-  setBlocks(updatedBlocks); // Update the state with the new blocks
-  setSelectedBlocks([]); // Clear the selection after merging
-  setEntryBlock(null); // Clear entry block
-  setModalVisible(false); // Close the modal
-};
+    saveHistory(); // Save state before adding a task
+
+    const updatedBlocks = blocks.map((block) =>
+      entryBlock && block.id === entryBlock.id
+        ? { ...block, ...newTask } // Update the block with the new task and priority
+        : block
+    );
+    setBlocks(updatedBlocks); // Update the state with the new blocks
+    setSelectedBlocks([]); // Clear the selection after merging
+    setEntryBlock(null); // Clear entry block
+    setModalVisible(false); // Close the modal
+  };
 
   const handleMerge = () => {
     if (selectedBlocks.length > 1) {
+      saveHistory(); // Save state before merging
+
       const firstBlock = selectedBlocks[0]; // Take the first selected block
       const lastBlock = selectedBlocks[selectedBlocks.length - 1]; // Take the last selected block
-  
+
       // Create a new time range for the first block, covering the full selected range
       const updatedTimeRange = `${firstBlock.time.split('-')[0]}-${lastBlock.time.split('-')[1]}`;
-  
+
       // Update the first block with the new time range and other info
       const updatedFirstBlock = { ...firstBlock, time: updatedTimeRange };
-  
+
       // Update the block list, keeping only the first block and removing the others
       const updatedBlocks = blocks
         .filter(block => !selectedBlocks.find(selected => selected.id === block.id) || block.id === firstBlock.id)
         .map(block => (block.id === firstBlock.id ? updatedFirstBlock : block));
-  
+
       // Reassign unique IDs to all blocks based on their index in the updated array
       const reassignedBlocks = updatedBlocks.map((block, index) => ({ ...block, id: index.toString() }));
-  
+
       setBlocks(reassignedBlocks);
       setSelectedBlocks([updatedFirstBlock]); // Only keep the first block selected
-  
+
       setIsSelecting(false); // Automatically return to entry mode
       setModalVisible(true); // Open the modal to enter task details for the merged block
     }
   };
-  
+
   const handleCancel = () => {
     setSelectedBlocks([]); // Clear the selection
   };
@@ -215,6 +249,8 @@ const TomorrowScreen = () => {
     <View style={styles.container}>
       <View style={styles.headerContainer}>
         <Text style={styles.header}>Tomorrow</Text>
+        <Button title="↺" onPress={handleUndo} disabled={history.length === 0} />
+        <Button title="↻" onPress={handleRestore} disabled={future.length === 0} />
         <Button title={isSelecting ? "Cancel Select" : "Select"} onPress={toggleSelectMode} />
       </View>
 
@@ -224,8 +260,8 @@ const TomorrowScreen = () => {
         renderItem={renderBlock}
       />
 
-    {/* Show merge and cancel buttons when blocks are selected */}
-    {isSelecting && selectedBlocks.length > 1 && (
+      {/* Show merge and cancel buttons when blocks are selected */}
+      {isSelecting && selectedBlocks.length > 1 && (
         <View style={styles.selectionOptions}>
           <Button title="Merge" onPress={handleMerge} />
           <Button title="Cancel" onPress={handleCancel} />

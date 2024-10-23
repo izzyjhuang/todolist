@@ -5,6 +5,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Button } from 'reac
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import AddTodoModal from '../components/AddTodoModal';
 import SettingsModal from '../components/SettingsModal';
+import RedBar from '../components/RedBar';
 
 const generateTimeBlocks = (interval = 15, dayStart = '6:00', dayEnd = '23:00') => {
     const blocks = [];
@@ -308,12 +309,27 @@ const TomorrowScreen = () => {
         setSelectedDayStart={setDayStart}
         setSelectedDayEnd={setDayEnd}
         />
-  
+
         <FlatList
-          data={blocks}
-          keyExtractor={(item) => item.id}
-          renderItem={renderBlock}
-        />
+        data={blocks}
+        keyExtractor={(item) => item.id}
+        renderItem={({ item }) => (
+          <View style={styles.block}>
+            <Text style={styles.timeText}>{item.time}</Text>
+            {item.title ? (
+              <View>
+                <Text style={styles.title}>{item.title}</Text>
+                {item.description ? <Text style={styles.description}>{item.description}</Text> : null}
+              </View>
+            ) : (
+              <Text style={styles.emptyText}>Empty</Text>
+            )}
+          </View>
+        )}
+      />
+
+      {/* Render RedBar as a single component relative to all blocks */}
+      <RedBar blocks={blocks} />
   
         {/* Show merge and cancel buttons when blocks are selected */}
         {isSelecting && selectedBlocks.length > 1 && (

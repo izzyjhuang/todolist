@@ -3,26 +3,30 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Button } from 'reac
 import AddTodoModal from '../components/AddTodoModal';
 
 const generateTimeBlocks = () => {
-  const blocks = [];
-  let hour = 5; // Start at 5 AM
-  let minute = 0;
-
-  for (let i = 0; i < 76; i++) { // 76 blocks for 15-minute increments starting from 5:00 AM to 12:00 AM
-    const startTime = `${hour === 24 ? '0' : hour.toString().padStart(2, '0')}`;
-
-    minute += 15;
-    if (minute === 60) {
-      minute = 0;
-      hour += 1;
+    const blocks = [];
+    let hour = 5; // Start at 5 AM
+    let minute = 0;
+  
+    for (let i = 0; i < 76; i++) { // 76 blocks for 15-minute increments starting from 5:00 AM to 12:00 AM
+      const startHour = `${hour.toString().padStart(2, '0')}`;
+      const startMinute = `${minute.toString().padStart(2, '0')}`;
+      const startTime = `${startHour}:${startMinute}`;
+  
+      minute += 15;
+      if (minute === 60) {
+        minute = 0;
+        hour += 1;
+      }
+      const endHour = `${hour.toString().padStart(2, '0')}`;
+      const endMinute = `${minute.toString().padStart(2, '0')}`;
+      const endTime = `${endHour}:${endMinute}`;
+  
+      const timeRange = `${startTime}-${endTime}`; // Format time as range
+  
+      blocks.push({ id: i.toString(), time: timeRange, title: '', description: '', priority: 'none' }); // Default priority is 'none'
     }
-    const endHour = hour === 24 ? 0 : hour;
-    const endTime = `${endHour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-    const timeRange = `${startTime}-${endTime}`; // Format time as range
-
-    blocks.push({ id: i.toString(), time: timeRange, title: '', description: '', priority: 'none' }); // Default priority is 'none'
-  }
-  return blocks;
-};
+    return blocks;
+  };
 
 const TomorrowScreen = () => {
   const [blocks, setBlocks] = useState(generateTimeBlocks());

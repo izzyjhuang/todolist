@@ -1,29 +1,45 @@
 // App.js
-import { StatusBar } from 'expo-status-bar';
 import React from 'react';
-import { StyleSheet, Text, View } from 'react-native';
-import TodoList from './TodoList';
+import { NavigationContainer } from '@react-navigation/native';
+import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import { Ionicons } from '@expo/vector-icons';
+
+import TodayScreen from './screens/TodayScreen';
+import UpcomingScreen from './screens/UpcomingScreen';
+import SearchScreen from './screens/SearchScreen';
+import BrowseScreen from './screens/BrowseScreen';
+
+const Tab = createBottomTabNavigator();
 
 export default function App() {
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>To-Do List App</Text>
-      <TodoList />
-      <StatusBar style="auto" />
-    </View>
+    <NavigationContainer>
+      <Tab.Navigator
+        screenOptions={({ route }) => ({
+          tabBarIcon: ({ color, size }) => {
+            let iconName;
+            if (route.name === 'Today') {
+              iconName = 'calendar-outline';
+            } else if (route.name === 'Upcoming') {
+              iconName = 'calendar-sharp';
+            } else if (route.name === 'Search') {
+              iconName = 'search-outline';
+            } else if (route.name === 'Browse') {
+              iconName = 'list-outline';
+            }
+            return <Ionicons name={iconName} size={size} color={color} />;
+          },
+        })}
+        tabBarOptions={{
+          activeTintColor: 'red',
+          inactiveTintColor: 'gray',
+        }}
+      >
+        <Tab.Screen name="Today" component={TodayScreen} />
+        <Tab.Screen name="Upcoming" component={UpcomingScreen} />
+        <Tab.Screen name="Search" component={SearchScreen} />
+        <Tab.Screen name="Browse" component={BrowseScreen} />
+      </Tab.Navigator>
+    </NavigationContainer>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginTop: 200,
-  },
-});

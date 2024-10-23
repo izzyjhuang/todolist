@@ -11,10 +11,10 @@ import {
   StyleSheet,
 } from 'react-native';
 
-const AddTodoModal = ({ visible, onClose, onAddTodo, initialTitle, initialDescription, initialPriority }) => {
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [priority, setPriority] = useState('none');
+const AddTodoModal = ({ visible, onClose, onAddTodo, initialTitle, initialDescription, initialPriority, customPriorities = {}}) => {
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
+    const [priority, setPriority] = useState('none');
 
   // Populate fields when modal opens with initial values
   useEffect(() => {
@@ -60,32 +60,31 @@ const AddTodoModal = ({ visible, onClose, onAddTodo, initialTitle, initialDescri
           <View style={styles.priorityContainer}>
             <Text style={styles.priorityHeader}>Priority:</Text>
 
-            <TouchableOpacity onPress={() => setPriority('p1')}>
-              <Text style={[styles.priorityButton, priority === 'p1' && styles.prioritySelected, { backgroundColor: '#D6B4FC' }]}>
-                P1
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => setPriority('p2')}>
-              <Text style={[styles.priorityButton, priority === 'p2' && styles.prioritySelected, { backgroundColor: '#FF8184' }]}>
-                P2
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => setPriority('p3')}>
-              <Text style={[styles.priorityButton, priority === 'p3' && styles.prioritySelected, { backgroundColor: '#FDAA48' }]}>
-                P3
-              </Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={() => setPriority('p4')}>
-              <Text style={[styles.priorityButton, priority === 'p4' && styles.prioritySelected, { backgroundColor: '#FFFFC5' }]}>
-                P4
-              </Text>
-            </TouchableOpacity>
+            {Object.keys(customPriorities).map((priorityKey) => {
+              const priorityItem = customPriorities[priorityKey];
+              return (
+                <TouchableOpacity key={priorityKey} onPress={() => setPriority(priorityKey)}>
+                  <Text
+                    style={[
+                      styles.priorityButton,
+                      priority === priorityKey && styles.prioritySelected,
+                      { backgroundColor: priorityItem.color },
+                    ]}
+                  >
+                    {priorityItem.label}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
 
             <TouchableOpacity onPress={() => setPriority('none')}>
-              <Text style={[styles.priorityButton, priority === 'none' && styles.prioritySelected, { backgroundColor: '#FFF' }]}>
+              <Text
+                style={[
+                  styles.priorityButton,
+                  priority === 'none' && styles.prioritySelected,
+                  { backgroundColor: '#FFF' },
+                ]}
+              >
                 None
               </Text>
             </TouchableOpacity>
@@ -103,50 +102,52 @@ const AddTodoModal = ({ visible, onClose, onAddTodo, initialTitle, initialDescri
 };
 
 const styles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    width: '90%',
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-  },
-  header: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  input: {
-    borderBottomWidth: 1,
-    marginBottom: 20,
-    padding: 10,
-  },
-  priorityContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginBottom: 20,
-  },
-  priorityHeader: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginRight: 10,
-  },
-  priorityButton: {
-    fontSize: 16,
-    padding: 10,
-    borderRadius: 5,
-    borderWidth: 1,
-    color: 'black',
-    textAlign: 'center',
-  },
-  prioritySelected: {
-    borderColor: '#333',
-    borderWidth: 2,
-  },
-});
-
-export default AddTodoModal;
+    modalContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContent: {
+      width: '90%',
+      backgroundColor: 'white',
+      padding: 20,
+      borderRadius: 10,
+    },
+    header: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      marginBottom: 20,
+    },
+    input: {
+      borderBottomWidth: 1,
+      marginBottom: 20,
+      padding: 10,
+    },
+    priorityContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      marginBottom: 20,
+      flexWrap: 'wrap',
+    },
+    priorityHeader: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      marginRight: 10,
+    },
+    priorityButton: {
+      fontSize: 16,
+      padding: 10,
+      borderRadius: 5,
+      borderWidth: 1,
+      color: 'black',
+      textAlign: 'center',
+      margin: 5,
+    },
+    prioritySelected: {
+      borderColor: '#333',
+      borderWidth: 2,
+    },
+  });
+  
+  export default AddTodoModal;

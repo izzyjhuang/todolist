@@ -2,40 +2,53 @@
 
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Button } from 'react-native';
+import Icon from 'react-native-vector-icons/MaterialIcons';
 import AddTodoModal from '../components/AddTodoModal';
 import SettingsModal from '../components/SettingsModal';
 
-// Updated to accept time interval as an argument
-const generateTimeBlocks = (interval = 15) => {
-  const blocks = [];
-  let hour = 5; // Start at 5 AM
-  let minute = 0;
+const generateTimeBlocks = (interval = 15, dayStart = '6:00', dayEnd = '23:00') => {
+    const blocks = [];
+    let [startHour, startMinute] = dayStart.split(':').map(Number);
+    let [endHour, endMinute] = dayEnd.split(':').map(Number);
 
-  const totalBlocks = Math.floor((19 * 60) / interval); // 19 hours from 5:00 AM to 12:00 AM
-
-  for (let i = 0; i < totalBlocks; i++) {
-    const startHour = `${hour.toString().padStart(2, '0')}`;
-    const startMinute = `${minute.toString().padStart(2, '0')}`;
-    const startTime = `${startHour}:${startMinute}`;
-
-    minute += interval;
-    if (minute >= 60) {
-      minute = minute % 60;
-      hour += 1;
+    if (endHour === 0) endHour = 24;
+  
+    // Calculate total minutes for the day start and day end
+    const startTotalMinutes = startHour * 60 + startMinute;
+    const endTotalMinutes = endHour * 60 + endMinute;
+    const totalMinutes = endTotalMinutes - startTotalMinutes;
+  
+    const totalBlocks = Math.floor(totalMinutes / interval);
+  
+    let currentMinutes = startTotalMinutes;
+  
+    for (let i = 0; i < totalBlocks; i++) {
+      const startHour = Math.floor(currentMinutes / 60);
+      const startMinute = currentMinutes % 60;
+      const startTime = `${startHour.toString().padStart(2, '0')}:${startMinute
+        .toString()
+        .padStart(2, '0')}`;
+  
+      currentMinutes += interval;
+  
+      let endHour = Math.floor(currentMinutes / 60);
+      if (endHour === 24) endHour = 0;
+      const endMinute = currentMinutes % 60;
+      const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute
+        .toString()
+        .padStart(2, '0')}`;
+  
+      const timeRange = `${startTime}-${endTime}`;
+  
+      blocks.push({ id: i.toString(), time: timeRange, title: '', description: '', priority: 'none' });
     }
-
-    const endHour = `${hour.toString().padStart(2, '0')}`;
-    const endMinute = `${minute.toString().padStart(2, '0')}`;
-    const endTime = `${endHour}:${endMinute}`;
-
-    const timeRange = `${startTime}-${endTime}`; // Format time as range
-
-    blocks.push({ id: i.toString(), time: timeRange, title: '', description: '', priority: 'none' }); // Default priority is 'none'
-  }
-  return blocks;
-};
+  
+    return blocks;
+  };
 
 const TomorrowScreen = () => {
+    const [dayStart, setDayStart] = useState('6:00'); // Default start time
+    const [dayEnd, setDayEnd] = useState('23:00'); // Default end time
     const [blocks, setBlocks] = useState(generateTimeBlocks());
     const [selectedBlocks, setSelectedBlocks] = useState([]);
     const [modalVisible, setModalVisible] = useState(false);
@@ -81,9 +94,11 @@ const TomorrowScreen = () => {
     };
   
     // Update blocks when interval changes
-    const updateTimeBlocks = (newInterval) => {
-      setBlocks(generateTimeBlocks(newInterval));
-    };
+    const updateTimeBlocks = (newInterval, newDayStart, newDayEnd) => {
+        setBlocks(generateTimeBlocks(newInterval, newDayStart, newDayEnd));
+        setDayStart(newDayStart);
+        setDayEnd(newDayEnd);
+      };
   
     // Toggle between Select and Entry modes
     const toggleSelectMode = () => {
@@ -271,7 +286,9 @@ const TomorrowScreen = () => {
       <View style={styles.container}>
         <View style={styles.headerContainer}>
           <Text style={styles.header}>Tomorrow</Text>
-          <Button title="Setting" onPress={() => setSettingsVisible(true)} />
+          <TouchableOpacity onPress={() => setSettingsVisible(true)}>
+            <Icon name="settings" size={30} color="#1E8AFF" />
+          </TouchableOpacity>
           <Button title="↺" onPress={handleUndo} disabled={history.length === 0} />
           <Button title="↻" onPress={handleRestore} disabled={future.length === 0} />
           <Button title={isSelecting ? "Cancel Select" : "Select"} onPress={toggleSelectMode} />
@@ -279,13 +296,17 @@ const TomorrowScreen = () => {
   
       {/* Settings Modal */}
       <SettingsModal
-          visible={settingsVisible}
-          onClose={() => setSettingsVisible(false)}
-          timeInterval={timeInterval}
-          setTimeInterval={setTimeInterval}
-          customPriorities={customPriorities}
-          setCustomPriorities={setCustomPriorities}
-          updateTimeBlocks={updateTimeBlocks}
+        visible={settingsVisible}
+        onClose={() => setSettingsVisible(false)}
+        timeInterval={timeInterval}
+        setTimeInterval={setTimeInterval}
+        customPriorities={customPriorities}
+        setCustomPriorities={setCustomPriorities}
+        updateTimeBlocks={updateTimeBlocks}
+        selectedDayStart={dayStart}
+        selectedDayEnd={dayEnd}
+        setSelectedDayStart={setDayStart}
+        setSelectedDayEnd={setDayEnd}
         />
   
         <FlatList
@@ -311,16 +332,17 @@ const TomorrowScreen = () => {
         )}
   
         <AddTodoModal
-          visible={modalVisible}
-          onClose={() => {
+        visible={modalVisible}
+        onClose={() => {
             setModalVisible(false);
             setSelectedBlocks([]);
             setEntryBlock(null);
-          }}
-          onAddTodo={handleAddTodo}
-          initialTitle={entryBlock?.title} // Pass the existing title
-          initialDescription={entryBlock?.description} // Pass the existing description
-          initialPriority={entryBlock?.priority} // Pass the existing priority
+        }}
+        onAddTodo={handleAddTodo}
+        initialTitle={entryBlock?.title} // Pass the existing title
+        initialDescription={entryBlock?.description} // Pass the existing description
+        initialPriority={entryBlock?.priority} // Pass the existing priority
+        customPriorities={customPriorities} // Pass the dynamic priorities from settings
         />
       </View>
     );

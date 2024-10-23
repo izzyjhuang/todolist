@@ -5,11 +5,15 @@ import { View, Text, Modal, Button, StyleSheet, TextInput, TouchableOpacity } fr
 
 // List of time zones with their respective UTC offsets
 const timeZoneList = [
-  { label: "Pacific Time (UTC -7)", value: "PST" },
-  { label: "Mountain Time (UTC -6)", value: "MST" },
-  { label: "Central Time (UTC -5)", value: "CST" },
-  { label: "Eastern Time (UTC -4)", value: "EST" },
+  { label: "Pacific Time (UTC-7)", value: "PST" },
+  { label: "Mountain Time (UTC-6)", value: "MST" },
+  { label: "Central Time (UTC-5)", value: "CST" },
+  { label: "Eastern Time (UTC-4)", value: "EST" },
 ];
+
+// Time options for Day Starts and Day Ends
+const dayStartOptions = ['5:00', '6:00', '7:00', '8:00'];
+const dayEndOptions = ['21:00', '22:00', '23:00', '0:00'];
 
 const SettingsModal = ({
   visible,
@@ -20,15 +24,20 @@ const SettingsModal = ({
   setCustomPriorities,
   updateTimeBlocks,
 }) => {
-  const [colorPaletteVisible, setColorPaletteVisible] = useState(null); // Track the visible color palette
-  const [intervalVisible, setIntervalVisible] = useState(false); // Track schedule interval dropdown
-  const [timeZoneVisible, setTimeZoneVisible] = useState(false); // Track time zone dropdown
-  const [selectedTimeZone, setSelectedTimeZone] = useState('PST'); // Default to Pacific Time
+    const [colorPaletteVisible, setColorPaletteVisible] = useState(null); // Track the visible color palette
+    const [intervalVisible, setIntervalVisible] = useState(false); // Track schedule interval dropdown
+    const [timeZoneVisible, setTimeZoneVisible] = useState(false); // Track time zone dropdown
+    const [selectedTimeZone, setSelectedTimeZone] = useState('PST'); // Default to Pacific Time
+    const [dayStartVisible, setDayStartVisible] = useState(false); // Track day starts dropdown visibility
+    const [dayEndVisible, setDayEndVisible] = useState(false); // Track day ends dropdown visibility
+    const [selectedDayStart, setSelectedDayStart] = useState(selectedDayStart || '6:00');
+    const [selectedDayEnd, setSelectedDayEnd] = useState(selectedDayEnd || '23:00');
   
-  const handleSaveSettings = () => {
-    updateTimeBlocks(timeInterval);
-    onClose();
-  };
+  
+    const handleSaveSettings = () => {
+        updateTimeBlocks(timeInterval, selectedDayStart, selectedDayEnd); // Pass day start and end times
+        onClose();
+    };
 
   // Function to add a new priority item
   const addNewPriority = () => {
@@ -110,6 +119,46 @@ const SettingsModal = ({
     );
   };
 
+  // Day Starts Dropdown
+  const renderDayStartOptions = () => {
+    return (
+      <View style={styles.timeZonePalette}>
+        {dayStartOptions.map((start) => (
+          <TouchableOpacity
+            key={start}
+            style={styles.timeZoneOption}
+            onPress={() => {
+              setSelectedDayStart(start);
+              setDayStartVisible(false);
+            }}
+          >
+            <Text style={styles.intervalText}>{start}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
+
+  // Day Ends Dropdown
+  const renderDayEndOptions = () => {
+    return (
+      <View style={styles.timeZonePalette}>
+        {dayEndOptions.map((end) => (
+          <TouchableOpacity
+            key={end}
+            style={styles.timeZoneOption}
+            onPress={() => {
+              setSelectedDayEnd(end);
+              setDayEndVisible(false);
+            }}
+          >
+            <Text style={styles.intervalText}>{end}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
+
   // Schedule Interval Selector (similar to color palette)
   const renderIntervalOptions = () => {
     const intervals = [10, 15, 20, 30];
@@ -180,6 +229,31 @@ const SettingsModal = ({
           </TouchableOpacity>
           {intervalVisible && renderIntervalOptions()}
 
+          {/* Day Starts and Day Ends Side by Side */}
+          <View style={styles.dayTimeContainer}>
+            <View style={styles.dayTimeBlock}>
+              <Text style={styles.subHeader}>Day Starts:</Text>
+              <TouchableOpacity
+                style={styles.intervalButton}
+                onPress={() => setDayStartVisible((prev) => !prev)}
+              >
+                <Text style={styles.intervalButtonText}>{selectedDayStart}</Text>
+              </TouchableOpacity>
+              {dayStartVisible && renderDayStartOptions()}
+            </View>
+
+            <View style={styles.dayTimeBlock}>
+              <Text style={styles.subHeader}>Day Ends:</Text>
+              <TouchableOpacity
+                style={styles.intervalButton}
+                onPress={() => setDayEndVisible((prev) => !prev)}
+              >
+                <Text style={styles.intervalButtonText}>{selectedDayEnd}</Text>
+              </TouchableOpacity>
+              {dayEndVisible && renderDayEndOptions()}
+            </View>
+          </View>
+
           <Text style={styles.subHeader}>Priority Labels:</Text>
 
           {/* Render priority buttons */}
@@ -202,122 +276,123 @@ const SettingsModal = ({
 };
 
 const styles = StyleSheet.create({
-  modalContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-  },
-  modalContent: {
-    width: '90%',
-    backgroundColor: 'white',
-    padding: 20,
-    borderRadius: 10,
-  },
-  header: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 20,
-  },
-  subHeader: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 10,
-  },
-  picker: {
-    height: 50,
-    width: '100%',
-    marginBottom: 20,
-  },
-  intervalButton: {
-    backgroundColor: '#f0f0f0',
-    padding: 10,
-    alignItems: 'center',
-    borderRadius: 8,
-    marginBottom: 10,
-  },
-  intervalButtonText: {
-    fontSize: 16,
-    color: 'black',
-  },
-  intervalPalette: {
-    flexDirection: 'row',
-    marginBottom: 20,
-    justifyContent: 'space-between',
-  },
-  intervalOption: {
-    padding: 10,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 8,
-  },
-  timeZonePalette: {
-    flexDirection: 'column',
-    marginBottom: 20,
-    
-    // justifyContent: 'space-between',
-  },
-  timeZoneOption: {
-    padding: 10,
-    backgroundColor: '#e0e0e0',
-    borderRadius: 8,
-    marginVertical: 2,
-  },
-  intervalText: {
-    fontSize: 16,
-    color: 'black',
-  },
-  priorityBlock: {
-    marginBottom: 20,
-  },
-  priorityRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  priorityButton: {
-    width: 40,
-    height: 40,
-    borderRadius: 8,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginRight: 10,
-  },
-  priorityButtonText: {
-    color: 'black',
-    fontWeight: 'bold',
-  },
-  priorityInput: {
-    flex: 1,
-    borderBottomWidth: 1,
-    padding: 5,
-    marginRight: 10,
-  },
-  deleteButton: {
-    fontSize: 20,
-    color: 'red',
-  },
-  addButton: {
-    marginTop: 20,
-    padding: 10,
-    alignItems: 'center',
-  },
-  addButtonText: {
-    color: 'green',
-    fontWeight: 'bold',
-  },
-  buttonRow: {
-    marginTop: 20,
-  },
-  colorPalette: {
-    flexDirection: 'row',
-    marginTop: 10,
-    justifyContent: 'center',
-  },
-  colorOption: {
-    width: 30,
-    height: 30,
-    borderRadius: 15,
-    marginHorizontal: 5,
-  },
-});
+    modalContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    },
+    modalContent: {
+      width: '90%',
+      backgroundColor: 'white',
+      padding: 20,
+      borderRadius: 10,
+    },
+    header: {
+      fontSize: 20,
+      fontWeight: 'bold',
+      marginBottom: 20,
+    },
+    subHeader: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      marginTop: 10,
+      marginBottom: 5,
+    },
+    intervalButton: {
+      backgroundColor: '#f0f0f0',
+      padding: 10,
+      alignItems: 'center',
+      borderRadius: 8,
+      marginBottom: 10,
+    },
+    intervalButtonText: {
+      fontSize: 16,
+      color: 'black',
+    },
+    intervalPalette: {
+      flexDirection: 'row',
+      marginBottom: 20,
+      justifyContent: 'space-between',
+    },
+    intervalOption: {
+      padding: 10,
+      backgroundColor: '#e0e0e0',
+      borderRadius: 8,
+    },
+    timeZonePalette: {
+      flexDirection: 'column',
+      marginBottom: 20,
+    },
+    timeZoneOption: {
+      padding: 10,
+      backgroundColor: '#e0e0e0',
+      borderRadius: 8,
+      marginVertical: 2,
+    },
+    intervalText: {
+      fontSize: 16,
+      color: 'black',
+    },
+    dayTimeContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+    },
+    dayTimeBlock: {
+      flex: 1,
+      marginHorizontal: 5, // Adds spacing between the two dropdowns
+    },
+    priorityBlock: {
+      marginBottom: 20,
+    },
+    priorityRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+    },
+    priorityButton: {
+      width: 80,
+      height: 40,
+      borderRadius: 8,
+      justifyContent: 'center',
+      alignItems: 'center',
+      marginRight: 10,
+    },
+    priorityButtonText: {
+      color: 'black',
+      fontWeight: 'bold',
+    },
+    priorityInput: {
+      flex: 1,
+      borderBottomWidth: 1,
+      padding: 5,
+      marginRight: 10,
+    },
+    deleteButton: {
+      fontSize: 20,
+      color: 'red',
+    },
+    addButton: {
+      marginTop: 20,
+      alignItems: 'center',
+    },
+    addButtonText: {
+      color: '#1E8AFF',
+      fontSize: 18,
+    },
+    buttonRow: {
+      marginTop: 20,
+    },
+    colorPalette: {
+      flexDirection: 'row',
+      marginTop: 10,
+      justifyContent: 'center',
+    },
+    colorOption: {
+      width: 30,
+      height: 30,
+      borderRadius: 15,
+      marginHorizontal: 5,
+    },
+  });
 
 export default SettingsModal;

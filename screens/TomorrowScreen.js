@@ -326,58 +326,58 @@ const TomorrowScreen = () => {
     );
   };
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    padding: 10,
-    backgroundColor: '#fff',
-  },
-  headerContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
-  header: {
-    fontSize: 24,
-    fontWeight: 'bold',
-  },
-  block: {
-    padding: 15,
-    borderBottomWidth: 1,
-    borderColor: '#eee',
-    minHeight: 60, // Minimum height to expand with content
-  },
-  selectedBlock: {
-    borderColor: '#00f',
-    borderWidth: 2, // Highlight the selected block
-  },
-  timeText: {
-    fontSize: 16,
-    color: '#666',
-    flexWrap: 'wrap',
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginTop: 5,
-    flexWrap: 'wrap',
-  },
-  description: {
-    fontSize: 14,
-    color: 'blue',
-    marginTop: 3,
-    flexWrap: 'wrap',
-  },
-  emptyText: {
-    fontSize: 14,
-    color: '#aaa',
-  },
-  selectionOptions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 10,
-  },
-});
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      padding: 10,
+      backgroundColor: '#fff',
+    },
+    headerContainer: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginBottom: 10,
+    },
+    header: {
+      fontSize: 24,
+      fontWeight: 'bold',
+    },
+    block: {
+      padding: 15,
+      borderBottomWidth: 1,
+      borderColor: '#eee',
+      minHeight: 60, // Minimum height to expand with content
+    },
+    selectedBlock: {
+      borderColor: '#00f',
+      borderWidth: 2, // Highlight the selected block
+    },
+    timeText: {
+      fontSize: 16,
+      color: '#666',
+      flexWrap: 'wrap',
+    },
+    title: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      marginTop: 5,
+      flexWrap: 'wrap',
+    },
+    description: {
+      fontSize: 14,
+      color: 'blue',
+      marginTop: 3,
+      flexWrap: 'wrap',
+    },
+    emptyText: {
+      fontSize: 14,
+      color: '#aaa',
+    },
+    selectionOptions: {
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+      marginTop: 10,
+    },
+  });
 
 export default TomorrowScreen;

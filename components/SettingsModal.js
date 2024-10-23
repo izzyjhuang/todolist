@@ -3,6 +3,14 @@
 import React, { useState } from 'react';
 import { View, Text, Modal, Button, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
 
+// List of time zones with their respective UTC offsets
+const timeZoneList = [
+  { label: "Pacific Time (UTC -7)", value: "PST" },
+  { label: "Mountain Time (UTC -6)", value: "MST" },
+  { label: "Central Time (UTC -5)", value: "CST" },
+  { label: "Eastern Time (UTC -4)", value: "EST" },
+];
+
 const SettingsModal = ({
   visible,
   onClose,
@@ -13,7 +21,10 @@ const SettingsModal = ({
   updateTimeBlocks,
 }) => {
   const [colorPaletteVisible, setColorPaletteVisible] = useState(null); // Track the visible color palette
-
+  const [intervalVisible, setIntervalVisible] = useState(false); // Track schedule interval dropdown
+  const [timeZoneVisible, setTimeZoneVisible] = useState(false); // Track time zone dropdown
+  const [selectedTimeZone, setSelectedTimeZone] = useState('PST'); // Default to Pacific Time
+  
   const handleSaveSettings = () => {
     updateTimeBlocks(timeInterval);
     onClose();
@@ -24,7 +35,7 @@ const SettingsModal = ({
     const newKey = `p${Object.keys(customPriorities).length + 1}`;
     setCustomPriorities((prev) => ({
       ...prev,
-      [newKey]: { label: newKey, color: '#D3D3D3' }, // Default to yellow
+      [newKey]: { label: newKey, color: '#D3D3D3' }, // Default to grey
     }));
   };
 
@@ -39,7 +50,7 @@ const SettingsModal = ({
 
   // Render the color palette
   const renderColorPalette = (priorityKey) => {
-    const colors = ['#D6B4FC', '#FF8184', '#FDAA48', '#FFFFC5', '#D1FFBD', '90D5FF', 'D3D3D3'];
+    const colors = ['#D6B4FC', '#FF8184', '#FDAA48', '#FFFFC5', '#D1FFBD', '#90D5FF', '#D3D3D3'];
 
     return (
       <View style={styles.colorPalette}>
@@ -99,11 +110,77 @@ const SettingsModal = ({
     );
   };
 
+  // Schedule Interval Selector (similar to color palette)
+  const renderIntervalOptions = () => {
+    const intervals = [10, 15, 20, 30];
+
+    return (
+      <View style={styles.intervalPalette}>
+        {intervals.map((interval) => (
+          <TouchableOpacity
+            key={interval}
+            style={styles.intervalOption}
+            onPress={() => {
+              setTimeInterval(interval);
+              setIntervalVisible(false); // Hide interval options after selection
+            }}
+          >
+            <Text style={styles.intervalText}>{`${interval} mins`}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
+
+  // Time Zone Selector (similar to schedule interval)
+  const renderTimeZoneOptions = () => {
+    return (
+      <View style={styles.timeZonePalette}>
+        {timeZoneList.map((zone) => (
+          <TouchableOpacity
+            key={zone.value}
+            style={styles.timeZoneOption}
+            onPress={() => {
+              setSelectedTimeZone(zone.value);
+              setTimeZoneVisible(false); // Hide time zone options after selection
+            }}
+          >
+            <Text style={styles.intervalText}>{zone.label}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
+
   return (
     <Modal visible={visible} animationType="slide" transparent={true}>
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
-          <Text style={styles.header}>Priority Labels</Text>
+          <Text style={styles.header}>Settings</Text>
+
+          {/* Time Zone Selector */}
+          <Text style={styles.subHeader}>Time Zone:</Text>
+          <TouchableOpacity
+            style={styles.intervalButton}
+            onPress={() => setTimeZoneVisible((prev) => !prev)}
+          >
+            <Text style={styles.intervalButtonText}>
+              {timeZoneList.find((tz) => tz.value === selectedTimeZone)?.label}
+            </Text>
+          </TouchableOpacity>
+          {timeZoneVisible && renderTimeZoneOptions()}
+
+          {/* Schedule Interval Selector */}
+          <Text style={styles.subHeader}>Schedule Interval:</Text>
+          <TouchableOpacity
+            style={styles.intervalButton}
+            onPress={() => setIntervalVisible((prev) => !prev)}
+          >
+            <Text style={styles.intervalButtonText}>{`${timeInterval} mins`}</Text>
+          </TouchableOpacity>
+          {intervalVisible && renderIntervalOptions()}
+
+          <Text style={styles.subHeader}>Priority Labels:</Text>
 
           {/* Render priority buttons */}
           {Object.keys(customPriorities).map(renderPriorityButton)}
@@ -142,8 +219,55 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 20,
   },
+  subHeader: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginTop: 10,
+  },
+  picker: {
+    height: 50,
+    width: '100%',
+    marginBottom: 20,
+  },
+  intervalButton: {
+    backgroundColor: '#f0f0f0',
+    padding: 10,
+    alignItems: 'center',
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  intervalButtonText: {
+    fontSize: 16,
+    color: 'black',
+  },
+  intervalPalette: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    justifyContent: 'space-between',
+  },
+  intervalOption: {
+    padding: 10,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 8,
+  },
+  timeZonePalette: {
+    flexDirection: 'column',
+    marginBottom: 20,
+    
+    // justifyContent: 'space-between',
+  },
+  timeZoneOption: {
+    padding: 10,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 8,
+    marginVertical: 2,
+  },
+  intervalText: {
+    fontSize: 16,
+    color: 'black',
+  },
   priorityBlock: {
-    marginBottom: 20, // Add some space between priority blocks
+    marginBottom: 20,
   },
   priorityRow: {
     flexDirection: 'row',
@@ -186,7 +310,7 @@ const styles = StyleSheet.create({
   colorPalette: {
     flexDirection: 'row',
     marginTop: 10,
-    justifyContent: 'center', // Center the color options horizontally
+    justifyContent: 'center',
   },
   colorOption: {
     width: 30,

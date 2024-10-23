@@ -1,21 +1,34 @@
 // screens/TodayScreen.js
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import TaskList from '../components/TaskList';
 import FloatingActionButton from '../components/FloatingActionButton';
+import AddTodoModal from '../components/AddTodoModal';
 
-const tasks = [
-  { id: '1', text: 'Download Todoist on all devices' },
-  { id: '2', text: 'Take the productivity quiz' },
-  { id: '3', text: 'Browse the Todoist Inspiration Hub' },
+const initialTasks = [
+  { id: '1', title: 'Download Todoist', description: '', date: 'Oct 22', time: '10:00 AM', priority: 'Normal' },
 ];
 
 const TodayScreen = () => {
+  const [tasks, setTasks] = useState(initialTasks);
+  const [modalVisible, setModalVisible] = useState(false);
+
+  const handleAddTodo = (newTask) => {
+    setTasks([...tasks, { id: Date.now().toString(), ...newTask }]);
+  };
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Today</Text>
       <TaskList tasks={tasks} />
-      <FloatingActionButton onPress={() => alert('Add Task')} />
+      <FloatingActionButton onPress={() => setModalVisible(true)} />
+
+      {/* Add Todo Modal */}
+      <AddTodoModal
+        visible={modalVisible}
+        onClose={() => setModalVisible(false)}
+        onAddTodo={handleAddTodo}
+      />
     </View>
   );
 };

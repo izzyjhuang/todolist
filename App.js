@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 import TodayScreen from './screens/TodayScreen';
 import UpcomingScreen from './screens/UpcomingScreen';
+import TomorrowScreen from './screens/TomorrowScreen';
 import SearchScreen from './screens/SearchScreen';
 import BrowseScreen from './screens/BrowseScreen';
 
@@ -20,7 +21,7 @@ export default function App() {
             let iconName;
             if (route.name === 'Today') {
               iconName = 'calendar-outline';
-            } else if (route.name === 'Upcoming') {
+            } else if (route.name === 'Tomorrow') {
               iconName = 'calendar-sharp';
             } else if (route.name === 'Search') {
               iconName = 'search-outline';
@@ -36,7 +37,7 @@ export default function App() {
         }}
       >
         <Tab.Screen name="Today" component={TodayScreen} />
-        <Tab.Screen name="Upcoming" component={UpcomingScreen} />
+        <Tab.Screen name="Tomorrow" component={TomorrowScreen} />
         <Tab.Screen name="Search" component={SearchScreen} />
         <Tab.Screen name="Browse" component={BrowseScreen} />
       </Tab.Navigator>

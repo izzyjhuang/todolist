@@ -8,33 +8,20 @@ import {
   Button,
   TouchableOpacity,
   StyleSheet,
-  Platform,
 } from 'react-native';
-import DateTimePicker from '@react-native-community/datetimepicker';
 
 const AddTodoModal = ({ visible, onClose, onAddTodo }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [date, setDate] = useState(new Date());
-  const [showDatePicker, setShowDatePicker] = useState(false);
   const [priority, setPriority] = useState('Normal');
 
-  // Handle date picker change
-  const handleDateChange = (event, selectedDate) => {
-    const currentDate = selectedDate || date;
-    setShowDatePicker(Platform.OS === 'ios');
-    setDate(currentDate);
-  };
-
   const handleAddTodo = () => {
-    const newTodo = {
+    const newTask = {
       title,
       description,
-      date: date.toLocaleDateString(),
-      time: date.toLocaleTimeString(),
       priority,
     };
-    onAddTodo(newTodo);
+    onAddTodo(newTask);
     setTitle('');
     setDescription('');
     setPriority('Normal');
@@ -45,7 +32,7 @@ const AddTodoModal = ({ visible, onClose, onAddTodo }) => {
     <Modal visible={visible} animationType="slide" transparent={true}>
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
-          <Text style={styles.header}>Add New Task</Text>
+          <Text style={styles.header}>Add Task for This Time Block</Text>
           <TextInput
             placeholder="Title"
             style={styles.input}
@@ -58,24 +45,6 @@ const AddTodoModal = ({ visible, onClose, onAddTodo }) => {
             value={description}
             onChangeText={setDescription}
           />
-
-          {/* Date Picker */}
-          <TouchableOpacity
-            style={styles.dateButton}
-            onPress={() => setShowDatePicker(true)}
-          >
-            <Text style={styles.dateButtonText}>
-              {`Due Date: ${date.toLocaleDateString()} ${date.toLocaleTimeString()}`}
-            </Text>
-          </TouchableOpacity>
-          {showDatePicker && (
-            <DateTimePicker
-              value={date}
-              mode="date"
-              display="default"
-              onChange={handleDateChange}
-            />
-          )}
 
           {/* Priority Selection */}
           <View style={styles.priorityContainer}>
@@ -124,14 +93,6 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     marginBottom: 20,
     padding: 10,
-  },
-  dateButton: {
-    backgroundColor: '#eee',
-    padding: 10,
-    marginBottom: 20,
-  },
-  dateButtonText: {
-    fontSize: 16,
   },
   priorityContainer: {
     flexDirection: 'row',

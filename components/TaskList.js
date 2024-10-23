@@ -9,7 +9,10 @@ const TaskList = ({ tasks }) => {
       keyExtractor={item => item.id}
       renderItem={({ item }) => (
         <View style={styles.taskItem}>
-          <Text style={styles.taskText}>{item.text}</Text>
+          <Text style={styles.taskTitle}>{item.title}</Text>
+          {item.description ? <Text style={styles.taskDescription}>{item.description}</Text> : null}
+          <Text style={styles.taskDate}>{item.date} {item.time}</Text>
+          <Text style={styles.taskPriority}>Priority: {item.priority}</Text>
         </View>
       )}
     />
@@ -25,8 +28,21 @@ const styles = StyleSheet.create({
     borderColor: '#eee',
     borderWidth: 1,
   },
-  taskText: {
-    fontSize: 16,
+  taskTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  taskDescription: {
+    fontSize: 14,
+    color: '#666',
+  },
+  taskDate: {
+    fontSize: 12,
+    color: '#888',
+  },
+  taskPriority: {
+    fontSize: 12,
+    color: '#444',
   },
 });
 

@@ -1,11 +1,9 @@
-// App.js
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
 
 import TodayScreen from './screens/TodayScreen';
-import UpcomingScreen from './screens/UpcomingScreen';
 import TomorrowScreen from './screens/TomorrowScreen';
 import SearchScreen from './screens/SearchScreen';
 import BrowseScreen from './screens/BrowseScreen';
@@ -30,11 +28,9 @@ export default function App() {
             }
             return <Ionicons name={iconName} size={size} color={color} />;
           },
+          tabBarActiveTintColor: 'red',
+          tabBarInactiveTintColor: 'gray',
         })}
-        tabBarOptions={{
-          activeTintColor: 'red',
-          inactiveTintColor: 'gray',
-        }}
       >
         <Tab.Screen name="Today" component={TodayScreen} />
         <Tab.Screen name="Tomorrow" component={TomorrowScreen} />

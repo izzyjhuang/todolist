@@ -1,5 +1,4 @@
-// components/AddTodoModal.js
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Modal,
   View,
@@ -10,10 +9,19 @@ import {
   StyleSheet,
 } from 'react-native';
 
-const AddTodoModal = ({ visible, onClose, onAddTodo }) => {
+const AddTodoModal = ({ visible, onClose, onAddTodo, initialTitle, initialDescription, initialPriority }) => {
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
-  const [priority, setPriority] = useState('Normal');
+  const [priority, setPriority] = useState('none');
+
+  // Populate fields when modal opens with initial values
+  useEffect(() => {
+    if (visible) {
+      setTitle(initialTitle || '');
+      setDescription(initialDescription || '');
+      setPriority(initialPriority || 'none');
+    }
+  }, [visible, initialTitle, initialDescription, initialPriority]);
 
   const handleAddTodo = () => {
     const newTask = {
@@ -24,7 +32,7 @@ const AddTodoModal = ({ visible, onClose, onAddTodo }) => {
     onAddTodo(newTask);
     setTitle('');
     setDescription('');
-    setPriority('Normal');
+    setPriority('none'); // Reset to default
     onClose();
   };
 
@@ -49,14 +57,35 @@ const AddTodoModal = ({ visible, onClose, onAddTodo }) => {
           {/* Priority Selection */}
           <View style={styles.priorityContainer}>
             <Text style={styles.priorityHeader}>Priority:</Text>
-            <TouchableOpacity onPress={() => setPriority('High')}>
-              <Text style={[styles.priorityButton, priority === 'High' && styles.prioritySelected]}>High</Text>
+
+            <TouchableOpacity onPress={() => setPriority('p1')}>
+              <Text style={[styles.priorityButton, priority === 'p1' && styles.prioritySelected, { backgroundColor: '#D6B4FC' }]}>
+                P1
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setPriority('Normal')}>
-              <Text style={[styles.priorityButton, priority === 'Normal' && styles.prioritySelected]}>Normal</Text>
+
+            <TouchableOpacity onPress={() => setPriority('p2')}>
+              <Text style={[styles.priorityButton, priority === 'p2' && styles.prioritySelected, { backgroundColor: '#FF8184' }]}>
+                P2
+              </Text>
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => setPriority('Low')}>
-              <Text style={[styles.priorityButton, priority === 'Low' && styles.prioritySelected]}>Low</Text>
+
+            <TouchableOpacity onPress={() => setPriority('p3')}>
+              <Text style={[styles.priorityButton, priority === 'p3' && styles.prioritySelected, { backgroundColor: '#FDAA48' }]}>
+                P3
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => setPriority('p4')}>
+              <Text style={[styles.priorityButton, priority === 'p4' && styles.prioritySelected, { backgroundColor: '#FFFFC5' }]}>
+                P4
+              </Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={() => setPriority('none')}>
+              <Text style={[styles.priorityButton, priority === 'none' && styles.prioritySelected, { backgroundColor: '#FFF' }]}>
+                None
+              </Text>
             </TouchableOpacity>
           </View>
 
@@ -102,15 +131,19 @@ const styles = StyleSheet.create({
   priorityHeader: {
     fontSize: 16,
     fontWeight: 'bold',
+    marginRight: 10,
   },
   priorityButton: {
     fontSize: 16,
     padding: 10,
     borderRadius: 5,
     borderWidth: 1,
+    color: 'black',
+    textAlign: 'center',
   },
   prioritySelected: {
-    backgroundColor: '#ddd',
+    borderColor: '#333',
+    borderWidth: 2,
   },
 });
 

@@ -1,4 +1,7 @@
-import React from 'react';
+// App.js
+
+import React, { useEffect } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,27 +15,45 @@ import DateIcon from './components/DateIcon';  // Import custom DateIcon compone
 const Tab = createBottomTabNavigator();
 
 export default function App() {
-  // Get today's date and tomorrow's date
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(today.getDate() + 1);
 
-  // Function to get the short weekday name
   const getWeekday = (date) => {
-    return new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(date);  // e.g., "Mon", "Tue"
+    return new Intl.DateTimeFormat('en-US', { weekday: 'short' }).format(date);
   };
 
-  // Function to get the day of the month (1-31)
   const getDayOfMonth = (date) => {
     return date.getDate();
   };
 
-  // Prepare the data for Today and Tomorrow
-  const todayWeekday = getWeekday(today);      // e.g., "Wed" for today
-  const tomorrowWeekday = getWeekday(tomorrow); // e.g., "Thu" for tomorrow
+  const todayWeekday = getWeekday(today);
+  const tomorrowWeekday = getWeekday(tomorrow);
+  const todayDate = getDayOfMonth(today);
+  const tomorrowDate = getDayOfMonth(tomorrow);
 
-  const todayDate = getDayOfMonth(today);      // e.g., 23 for today
-  const tomorrowDate = getDayOfMonth(tomorrow); // e.g., 24 for tomorrow
+  // Schedule task move from TomorrowScreen to TodayScreen at 3 AM
+  useEffect(() => {
+    const moveTasksToToday = async () => {
+      const tomorrowTasks = await AsyncStorage.getItem('tomorrowTasks');
+      if (tomorrowTasks) {
+        await AsyncStorage.setItem('todayTasks', tomorrowTasks); // Move tasks
+        await AsyncStorage.removeItem('tomorrowTasks'); // Clear tomorrow's tasks
+      }
+    };
+
+    const checkTime = () => {
+      const now = new Date();
+      if (now.getHours() === 3 && now.getMinutes() === 0) {
+        moveTasksToToday();
+      }
+    };
+
+    // Check every minute if it's 3 AM
+    const interval = setInterval(checkTime, 6000); // Check every 60 seconds
+
+    return () => clearInterval(interval); // Cleanup the interval on unmount
+  }, []);
 
   return (
     <NavigationContainer>

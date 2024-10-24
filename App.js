@@ -45,13 +45,13 @@ export default function App() {
 
     const checkTime = () => {
       const now = new Date();
-      if (now.getHours() === 3 && now.getMinutes() === 0) {
+      if (now.getHours() === 0 && now.getMinutes() === 15) {
         moveTasksToToday();
       }
     };
 
     // Check every minute if it's 3 AM
-    const interval = setInterval(checkTime, 6000); // Check every 60 seconds
+    const interval = setInterval(checkTime, 60000); // Check every 60 seconds
 
     return () => clearInterval(interval); // Cleanup the interval on unmount
   }, []);

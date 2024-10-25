@@ -441,10 +441,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: '#eee',
     minHeight: 60,
+    borderRadius: 10,
   },
   selectedBlock: {
     borderColor: '#00f',
     borderWidth: 2,
+    borderRadius: 10,
   },
   timeText: {
     fontSize: 16,

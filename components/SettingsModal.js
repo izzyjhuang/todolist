@@ -11,12 +11,12 @@ const timeZoneList = [
   { label: "Eastern Time (UTC-4)", value: "EST" },
 ];
 
-const defaultPriorities = {
-  p1: { label: 'p1', color: '#D6B4FC' },
-  p2: { label: 'p2', color: '#FF8184' },
-  p3: { label: 'p3', color: '#FDAA48' },
-  p4: { label: 'p4', color: '#FFFFC5' }
-};
+// const defaultPriorities = {
+//   p1: { label: 'p1', color: '#D6B4FC' },
+//   p2: { label: 'p2', color: '#FF8184' },
+//   p3: { label: 'p3', color: '#FDAA48' },
+//   p4: { label: 'p4', color: '#FFFFC5' }
+// };
 
 // Time options for Day Starts and Day Ends
 const dayStartOptions = ['5:00', '6:00', '7:00', '8:00'];
@@ -29,6 +29,10 @@ const SettingsModal = ({
   selectedDayEnd,   // Passed from parent
   setSelectedDayStart, // Passed from parent
   setSelectedDayEnd,   // Passed from parent
+  timeInterval,
+  setTimeInterval,
+  customPriorities,
+  setCustomPriorities,
   updateTimeBlocks,
 }) => {
     const [colorPaletteVisible, setColorPaletteVisible] = useState(null); // Track the visible color palette
@@ -37,13 +41,6 @@ const SettingsModal = ({
     const [selectedTimeZone, setSelectedTimeZone] = useState('PST'); // Default to Pacific Time
     const [dayStartVisible, setDayStartVisible] = useState(false); // Track day starts dropdown visibility
     const [dayEndVisible, setDayEndVisible] = useState(false); // Track day ends dropdown visibility
-    const [timeInterval, setTimeInterval] = useState(15);
-    const [customPriorities, setCustomPriorities] = useState({
-      p1: { label: 'p1', color: '#D6B4FC' },
-      p2: { label: 'p2', color: '#FF8184' },
-      p3: { label: 'p3', color: '#FDAA48' },
-      p4: { label: 'p4', color: '#FFFFC5' }
-    });
     // const [selectedDayStart, setSelectedDayStart] = useState(selectedDayStart || '6:00');
     // const [selectedDayEnd, setSelectedDayEnd] = useState(selectedDayEnd || '23:00');
   

@@ -9,8 +9,10 @@ import { Ionicons } from '@expo/vector-icons';
 import TodayScreen from './screens/TodayScreen';
 import TomorrowScreen from './screens/TomorrowScreen';
 import SearchScreen from './screens/SearchScreen';
-import BrowseScreen from './screens/BrowseScreen';
+// import BrowseScreen from './screens/BrowseScreen';
 import DateIcon from './components/DateIcon';
+import RoutineScreen from './screens/RoutineScreen';
+
 
 
 const Tab = createBottomTabNavigator();
@@ -45,7 +47,7 @@ export default function App() {
 
     const checkTime = () => {
       const now = new Date();
-      if (now.getHours() === 0 && now.getMinutes() === 0) {
+      if (now.getHours() === 0 && now.getMinutes() === 30) {
         moveTasksToToday();
       }
     };
@@ -54,6 +56,26 @@ export default function App() {
     const interval = setInterval(checkTime, 60000); // Check every 60 seconds
 
     return () => clearInterval(interval); // Cleanup the interval on unmount
+  }, []);
+
+  useEffect(() => {
+    const loadRoutineForTomorrow = async () => {
+      const weekday = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+      const routine = await AsyncStorage.getItem(`routine${weekday}`);
+      if (routine) {
+        await AsyncStorage.setItem('tomorrowTasks', routine);
+      }
+    };
+
+    const checkTime = () => {
+      const now = new Date();
+      if (now.getHours() === 0 && now.getMinutes() === 0) {
+        loadRoutineForTomorrow();
+      }
+    };
+
+    const interval = setInterval(checkTime, 60000); // Check every 60 seconds
+    return () => clearInterval(interval);
   }, []);
 
   return (
@@ -69,7 +91,7 @@ export default function App() {
               let iconName;
               if (route.name === 'Search') {
                 iconName = 'search-outline';
-              } else if (route.name === 'Browse') {
+              } else if (route.name === 'Routine') {
                 iconName = 'list-outline';
               }
               return <Ionicons name={iconName} size={size} color={color} />;
@@ -82,7 +104,7 @@ export default function App() {
         <Tab.Screen name="Today" component={TodayScreen} />
         <Tab.Screen name="Tomorrow" component={TomorrowScreen} />
         <Tab.Screen name="Search" component={SearchScreen} />
-        <Tab.Screen name="Browse" component={BrowseScreen} />
+        <Tab.Screen name="Routine" component={RoutineScreen} />
       </Tab.Navigator>
     </NavigationContainer>
   );

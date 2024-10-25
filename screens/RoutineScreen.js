@@ -1,24 +1,13 @@
-// TomorrowScreen.js
+// RoutineScreen.js
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Button } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Button} from 'react-native';
+import { Picker } from '@react-native-picker/picker';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import AddTodoModal from '../components/AddTodoModal';
 import SettingsModal from '../components/SettingsModal';
-
-// Function to get tomorrow's date in the format "Wed, Oct 23"
-const getFormattedDate = () => {
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-    return new Intl.DateTimeFormat('en-US', {
-      weekday: 'long',
-      month: 'short',
-      day: 'numeric',
-    }).format(tomorrow); // Outputs in the format: Wed, Oct 23
-  };
 
 const generateTimeBlocks = (interval = 15, dayStart = '6:00', dayEnd = '23:00') => {
   const blocks = [];
@@ -36,18 +25,14 @@ const generateTimeBlocks = (interval = 15, dayStart = '6:00', dayEnd = '23:00') 
   for (let i = 0; i < totalBlocks; i++) {
     const startHour = Math.floor(currentMinutes / 60);
     const startMinute = currentMinutes % 60;
-    const startTime = `${startHour.toString().padStart(2, '0')}:${startMinute
-      .toString()
-      .padStart(2, '0')}`;
+    const startTime = `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
 
     currentMinutes += interval;
 
     let endHour = Math.floor(currentMinutes / 60);
     if (endHour === 24) endHour = 0;
     const endMinute = currentMinutes % 60;
-    const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute
-      .toString()
-      .padStart(2, '0')}`;
+    const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
 
     const timeRange = `${startTime}-${endTime}`;
 
@@ -57,7 +42,8 @@ const generateTimeBlocks = (interval = 15, dayStart = '6:00', dayEnd = '23:00') 
   return blocks;
 };
 
-const TomorrowScreen = () => {
+const RoutineScreen = () => {
+  const [selectedDay, setSelectedDay] = useState('Monday');
   const [dayStart, setDayStart] = useState('6:00');
   const [dayEnd, setDayEnd] = useState('23:00');
   const [blocks, setBlocks] = useState(generateTimeBlocks());
@@ -69,6 +55,9 @@ const TomorrowScreen = () => {
   const [history, setHistory] = useState([]);
   const [future, setFuture] = useState([]);
 
+  const dayOptions = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+
   const [timeInterval, setTimeInterval] = useState(15);
   const [customPriorities, setCustomPriorities] = useState({
     p1: { label: 'p1', color: '#D6B4FC' },
@@ -78,22 +67,23 @@ const TomorrowScreen = () => {
   });
 
   useEffect(() => {
-    const loadTomorrowTasks = async () => {
-      const storedBlocks = await AsyncStorage.getItem('tomorrowTasks');
+    const loadRoutine = async () => {
+      const storedBlocks = await AsyncStorage.getItem(`routine${selectedDay}`);
       if (storedBlocks) {
         setBlocks(JSON.parse(storedBlocks));
+      } else {
+        setBlocks(generateTimeBlocks());
       }
     };
-    loadTomorrowTasks();
-  }, []);
+    loadRoutine();
+  }, [selectedDay]);
 
   useEffect(() => {
-    // Save blocks to AsyncStorage when updated
-    const saveTomorrowTasks = async () => {
-      await AsyncStorage.setItem('tomorrowTasks', JSON.stringify(blocks));
+    const saveRoutine = async () => {
+      await AsyncStorage.setItem(`routine${selectedDay}`, JSON.stringify(blocks));
     };
-    saveTomorrowTasks();
-  }, [blocks]);
+    saveRoutine();
+  }, [blocks, selectedDay]);
 
   const saveHistory = () => {
     setHistory([...history, blocks]);
@@ -229,23 +219,19 @@ const TomorrowScreen = () => {
       const firstBlock = selectedBlocks[0];
       const lastBlock = selectedBlocks[selectedBlocks.length - 1];
   
-      // Create a new time range for the first block, covering the full selected range
       const updatedTimeRange = `${firstBlock.time.split('-')[0]}-${lastBlock.time.split('-')[1]}`;
   
-      // Update the first block with the new time range and other info
       const updatedFirstBlock = { ...firstBlock, time: updatedTimeRange };
   
-      // Update the block list, keeping only the first block and removing the others
       const updatedBlocks = blocks
         .filter(block => !selectedBlocks.find(selected => selected.id === block.id) || block.id === firstBlock.id)
         .map(block => (block.id === firstBlock.id ? updatedFirstBlock : block));
   
-      // Reassign unique IDs to all blocks based on their index in the updated array
       const reassignedBlocks = updatedBlocks.map((block, index) => ({ ...block, id: index.toString() }));
   
       setBlocks(reassignedBlocks);
-      setSelectedBlocks([]); // Clear the selection after merge
-      setIsSelecting(false); // Automatically return to entry mode
+      setSelectedBlocks([]);
+      setIsSelecting(false);
     }
   };
 
@@ -293,10 +279,29 @@ const TomorrowScreen = () => {
     </TouchableOpacity>
   );
 
+  const renderDayOptions = () => {
+    return (
+      <View style={styles.timeZonePalette}>
+        {dayOptions.map((day) => (
+          <TouchableOpacity
+            key={day}
+            style={[
+              styles.timeZoneOption,
+              selectedDay === day ? styles.selectedDay : null,
+            ]}
+            onPress={() => setSelectedDay(day)}
+          >
+            <Text style={styles.intervalText}>{day}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
+    );
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        
+        {/* <Text style={styles.header}>Routine for {selectedDay}</Text> */}
         <TouchableOpacity onPress={() => setSettingsVisible(true)}>
           <Icon name="settings" size={30} color="#1E8AFF" />
         </TouchableOpacity>
@@ -304,7 +309,8 @@ const TomorrowScreen = () => {
         <Button title="↻" onPress={handleRestore} disabled={future.length === 0} />
         <Button title={isSelecting ? "Cancel Select" : "Select"} onPress={toggleSelectMode} />
       </View>
-      <Text style={styles.header}>{getFormattedDate()}</Text>
+
+      {renderDayOptions()}
 
       <SettingsModal
         visible={settingsVisible}
@@ -320,7 +326,7 @@ const TomorrowScreen = () => {
         setSelectedDayEnd={setDayEnd}
       />
 
-      <FlatList
+<FlatList
         data={blocks}
         keyExtractor={(item) => item.id}
         renderItem={renderBlock}
@@ -340,7 +346,7 @@ const TomorrowScreen = () => {
         </View>
       )}
 
-      <AddTodoModal
+<AddTodoModal
         visible={modalVisible}
         onClose={() => {
           setModalVisible(false);
@@ -380,17 +386,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: '#eee',
     minHeight: 60,
-    borderRadius: 10, // Add this line to round the block's edges
+    borderRadius: 10,
   },
   selectedBlock: {
     borderColor: '#00f',
     borderWidth: 2,
-    borderRadius: 10, // Add this line to round the edges of the selected block
+    borderRadius: 10,
   },
   timeText: {
     fontSize: 16,
     color: '#666',
-    flexWrap: 'wrap',
   },
   title: {
     fontSize: 16,
@@ -408,6 +413,29 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#aaa',
   },
+  timeZonePalette: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginBottom: 20,
+  },
+  timeZoneOption: {
+    padding: 10,
+    backgroundColor: '#e0e0e0',
+    borderRadius: 8,
+    margin: 5,
+  },
+  selectedDay: {
+    backgroundColor: '#1E8AFF',
+    fontWeight: 'bold',
+  },
+  intervalText: {
+    fontSize: 16,
+    color: 'black',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#aaa',
+  },
   selectionOptions: {
     flexDirection: 'row',
     justifyContent: 'space-around',
@@ -415,4 +443,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default TomorrowScreen;
+export default RoutineScreen;

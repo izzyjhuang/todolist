@@ -44,7 +44,7 @@ const calculateTimeFraction = (blockTime, currentTime) => {
 const getFormattedDate = () => {
     const today = new Date();
     return new Intl.DateTimeFormat('en-US', {
-      weekday: 'short',
+      weekday: 'long',
       month: 'short',
       day: 'numeric',
     }).format(today); // Outputs in the format: Wed, Oct 23
@@ -354,7 +354,6 @@ const TodayScreen = () => {
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <Text style={styles.header}>{getFormattedDate()}</Text>
         <TouchableOpacity onPress={() => setSettingsVisible(true)}>
           <Icon name="settings" size={30} color="#1E8AFF" />
         </TouchableOpacity>
@@ -362,6 +361,8 @@ const TodayScreen = () => {
         <Button title="↻" onPress={handleRestore} disabled={future.length === 0} />
         <Button title={isSelecting ? "Cancel Select" : "Select"} onPress={toggleSelectMode} />
       </View>
+      <Text style={styles.header}>{getFormattedDate()}</Text>
+
 
       <SettingsModal
         visible={settingsVisible}
@@ -425,6 +426,8 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 10,
+    marginLeft: 15,
+    marginRight: 15,
   },
   header: {
     fontSize: 24,

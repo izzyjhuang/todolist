@@ -4,7 +4,9 @@ import React, { useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
+import Icon from 'react-native-vector-icons/MaterialIcons';
+
 
 import TodayScreen from './screens/TodayScreen';
 import TomorrowScreen from './screens/TomorrowScreen';
@@ -47,7 +49,7 @@ export default function App() {
 
     const checkTime = () => {
       const now = new Date();
-      if (now.getHours() === 0 && now.getMinutes() === 30) {
+      if (now.getHours() === 0 && now.getMinutes() === 0) {
         moveTasksToToday();
       }
     };
@@ -90,11 +92,11 @@ export default function App() {
             } else {
               let iconName;
               if (route.name === 'Search') {
-                iconName = 'search-outline';
+                iconName = 'search';
               } else if (route.name === 'Routine') {
-                iconName = 'list-outline';
+                iconName = 'schedule';
               }
-              return <Ionicons name={iconName} size={size} color={color} />;
+              return <MaterialIcons name={iconName} size={size} color={color} />;
             }
           },
           tabBarActiveTintColor: 'red',

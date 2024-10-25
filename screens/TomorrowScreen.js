@@ -377,10 +377,12 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderColor: '#eee',
     minHeight: 60,
+    borderRadius: 10, // Add this line to round the block's edges
   },
   selectedBlock: {
     borderColor: '#00f',
     borderWidth: 2,
+    borderRadius: 10, // Add this line to round the edges of the selected block
   },
   timeText: {
     fontSize: 16,

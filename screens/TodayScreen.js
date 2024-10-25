@@ -6,6 +6,40 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import AddTodoModal from '../components/AddTodoModal';
 import SettingsModal from '../components/SettingsModal';
 
+const getCurrentTime = () => {
+  const now = new Date();
+  const hours = now.getHours();
+  const minutes = now.getMinutes();
+  return `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+};
+
+// Function to check if current time is within a block's time range
+const isCurrentTimeInRange = (blockTime, currentTime) => {
+  const [start, end] = blockTime.split('-');
+  return currentTime >= start && currentTime <= end;
+};
+
+// Function to calculate the fraction of time passed within a block
+const calculateTimeFraction = (blockTime, currentTime) => {
+  const [start, end] = blockTime.split('-');
+  const [startHour, startMinute] = start.split(':').map(Number);
+  const [endHour, endMinute] = end.split(':').map(Number);
+  const [currentHour, currentMinute] = currentTime.split(':').map(Number);
+
+  const startTotalMinutes = startHour * 60 + startMinute;
+  const endTotalMinutes = endHour * 60 + endMinute;
+  const currentTotalMinutes = currentHour * 60 + currentMinute;
+
+  const totalBlockMinutes = endTotalMinutes - startTotalMinutes;
+  const passedMinutes = currentTotalMinutes - startTotalMinutes;
+
+  if (passedMinutes < 0 || passedMinutes > totalBlockMinutes) {
+    return null;  // Out of block range
+  }
+
+  return passedMinutes / totalBlockMinutes;  // Fraction of time passed
+};
+
 // Function to get tomorrow's date in the format "Wed, Oct 23"
 const getFormattedDate = () => {
     const today = new Date();
@@ -63,6 +97,9 @@ const TodayScreen = () => {
   const [entryBlock, setEntryBlock] = useState(null);
   const [history, setHistory] = useState([]);
   const [future, setFuture] = useState([]);
+  const [currentBlockId, setCurrentBlockId] = useState(null);
+  const [currentTimeFraction, setCurrentTimeFraction] = useState(null);  // Track time fraction
+
 
   const [timeInterval, setTimeInterval] = useState(15);
   const [customPriorities, setCustomPriorities] = useState({
@@ -71,6 +108,31 @@ const TodayScreen = () => {
     p3: { label: 'p3', color: '#FDAA48' },
     p4: { label: 'p4', color: '#FFFFC5' }
   });
+
+  
+
+  // Function to locate the current block based on the time
+  const locateCurrentBlock = () => {
+    const currentTime = getCurrentTime();
+    const currentBlock = blocks.find(block => isCurrentTimeInRange(block.time, currentTime));
+    if (currentBlock) {
+      setCurrentBlockId(currentBlock.id);
+      const timeFraction = calculateTimeFraction(currentBlock.time, currentTime);
+      setCurrentTimeFraction(timeFraction);  // Set the time fraction for red line position
+    } else {
+      setCurrentBlockId(null);
+      setCurrentTimeFraction(null);  // Clear highlight if no block is found
+    }
+  };
+
+  // Recalculate the current block every minute
+  useEffect(() => {
+    locateCurrentBlock();  // Run it when the screen first loads
+    const intervalId = setInterval(() => {
+      locateCurrentBlock();  // Update every minute
+    }, 60000);  // 60000ms = 1 minute
+    return () => clearInterval(intervalId);  // Cleanup interval on unmount
+  }, [blocks]);  // Re-run when blocks are updated (split/merge)
 
   useEffect(() => {
     const loadTodayTasks = async () => {
@@ -220,27 +282,21 @@ const TodayScreen = () => {
   const handleMerge = () => {
     if (selectedBlocks.length > 1) {
       saveHistory();
-  
       const firstBlock = selectedBlocks[0];
       const lastBlock = selectedBlocks[selectedBlocks.length - 1];
-  
-      // Create a new time range for the first block, covering the full selected range
       const updatedTimeRange = `${firstBlock.time.split('-')[0]}-${lastBlock.time.split('-')[1]}`;
-  
-      // Update the first block with the new time range and other info
       const updatedFirstBlock = { ...firstBlock, time: updatedTimeRange };
   
-      // Update the block list, keeping only the first block and removing the others
       const updatedBlocks = blocks
         .filter(block => !selectedBlocks.find(selected => selected.id === block.id) || block.id === firstBlock.id)
         .map(block => (block.id === firstBlock.id ? updatedFirstBlock : block));
   
-      // Reassign unique IDs to all blocks based on their index in the updated array
       const reassignedBlocks = updatedBlocks.map((block, index) => ({ ...block, id: index.toString() }));
-  
       setBlocks(reassignedBlocks);
-      setSelectedBlocks([]); // Clear the selection after merge
-      setIsSelecting(false); // Automatically return to entry mode
+      setSelectedBlocks([]);
+      setIsSelecting(false);
+  
+      locateCurrentBlock();  // Recalculate current block after merge
     }
   };
 
@@ -264,28 +320,35 @@ const TodayScreen = () => {
   };
 
   const renderBlock = ({ item }) => (
-    <TouchableOpacity
-      style={[
-        styles.block,
-        { backgroundColor: getPriorityColor(item.priority) },
-        selectedBlocks.find(block => block.id === item.id) ? styles.selectedBlock : null
-      ]}
-      onPress={() =>
-        isSelecting ? handleBlockPressSelectMode(item) : handleBlockPressEntryMode(item)
-      }
-    >
-      <Text style={styles.timeText}>{item.time}</Text>
-      {item.title ? (
-        <View>
-          <Text style={styles.title}>{item.title}</Text>
-          {item.description ? (
-            <Text style={styles.description}>{item.description}</Text>
-          ) : null}
-        </View>
-      ) : (
-        <Text style={styles.emptyText}>Empty</Text>
+    <View style={styles.blockContainer}>
+      <TouchableOpacity
+        style={[
+          styles.block,
+          { backgroundColor: getPriorityColor(item.priority) },
+          selectedBlocks.find(block => block.id === item.id) ? styles.selectedBlock : null
+        ]}
+        onPress={() =>
+          isSelecting ? handleBlockPressSelectMode(item) : handleBlockPressEntryMode(item)
+        }
+      >
+        <Text style={styles.timeText}>{item.time}</Text>
+        {item.title ? (
+          <View>
+            <Text style={styles.title}>{item.title}</Text>
+            {item.description ? (
+              <Text style={styles.description}>{item.description}</Text>
+            ) : null}
+          </View>
+        ) : (
+          <Text style={styles.emptyText}>Empty</Text>
+        )}
+      </TouchableOpacity>
+      
+      {/* Red line for current block */}
+      {currentBlockId === item.id && currentTimeFraction !== null && (
+        <View style={[styles.redLine, { top: `${currentTimeFraction * 100}%` }]} />
       )}
-    </TouchableOpacity>
+    </View>
   );
 
   return (
@@ -367,6 +430,9 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
   },
+  blockContainer: {
+    position: 'relative',  // Allow absolute positioning of the red line
+  },
   block: {
     padding: 15,
     borderBottomWidth: 1,
@@ -402,6 +468,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginTop: 10,
+  },
+  redLine: {
+    position: 'absolute',  // The red line is positioned absolutely inside the block
+    height: 2,             // Set a thin height for the red line
+    backgroundColor: 'red',
+    width: '100%',         // Stretch the red line to the full width of the block
   },
 });
 

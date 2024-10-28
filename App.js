@@ -91,7 +91,7 @@ export default function App() {
               return <DateIcon weekday={tomorrowWeekday} date={tomorrowDate} />;
             } else {
               let iconName;
-              if (route.name === 'Search') {
+              if (route.name === 'Testing') {
                 iconName = 'search';
               } else if (route.name === 'Routine') {
                 iconName = 'schedule';
@@ -105,7 +105,7 @@ export default function App() {
       >
         <Tab.Screen name="Today" component={TodayScreen} />
         <Tab.Screen name="Tomorrow" component={TomorrowScreen} />
-        <Tab.Screen name="Search" component={SearchScreen} />
+        <Tab.Screen name="Testing" component={SearchScreen} />
         <Tab.Screen name="Routine" component={RoutineScreen} />
       </Tab.Navigator>
     </NavigationContainer>

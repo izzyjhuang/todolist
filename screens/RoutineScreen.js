@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Button} from 'react-native';
 import { Picker } from '@react-native-picker/picker';
+import { usePriorities } from '../components/PrioritiesContext';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -43,6 +44,7 @@ const generateTimeBlocks = (interval = 15, dayStart = '6:00', dayEnd = '23:00') 
 };
 
 const RoutineScreen = () => {
+  const { customPriorities, setCustomPriorities } = usePriorities();
   const [selectedDay, setSelectedDay] = useState('Monday');
   const [dayStart, setDayStart] = useState('6:00');
   const [dayEnd, setDayEnd] = useState('23:00');
@@ -59,12 +61,12 @@ const RoutineScreen = () => {
 
 
   const [timeInterval, setTimeInterval] = useState(15);
-  const [customPriorities, setCustomPriorities] = useState({
-    p1: { label: 'p1', color: '#D6B4FC' },
-    p2: { label: 'p2', color: '#FF8184' },
-    p3: { label: 'p3', color: '#FDAA48' },
-    p4: { label: 'p4', color: '#FFFFC5' }
-  });
+//   const [customPriorities, setCustomPriorities] = useState({
+//     p1: { label: 'p1', color: '#D6B4FC' },
+//     p2: { label: 'p2', color: '#FF8184' },
+//     p3: { label: 'p3', color: '#FDAA48' },
+//     p4: { label: 'p4', color: '#FFFFC5' }
+//   });
 
   useEffect(() => {
     const loadRoutine = async () => {

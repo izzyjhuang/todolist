@@ -99,18 +99,18 @@ const AllTodosScreen = () => {
     setNewDate(new Date()); // Reset the date input to today’s date
   };
   
-  const toggleComplete = (id) => {
-    // Save history for undo functionality
-    saveHistory();
+  const toggleComplete = async (id) => {
+    saveHistory(); // Save history for undo functionality
   
-    // Toggle the completion status without triggering eventEmitter
     const updatedTodos = todos.map(todo =>
       todo.id === id ? { ...todo, completed: !todo.completed } : todo
     );
   
-    // Save the updated todos without emitting an event
-    saveTodos(updatedTodos);
+    await saveTodos(updatedTodos); // Save updated todos to AsyncStorage
+    
+    eventEmitter.emit('reminderUpdated'); // Emit event for sync with TodayScreen
   };
+
   const categorizeTodos = () => {
     const now = new Date();
     const todayDate = now.toDateString();
@@ -150,12 +150,15 @@ const AllTodosScreen = () => {
     setModalVisible(true); // Show the modal for editing
   };
 
-  const handleDeleteTodo = (id) => {
-    saveHistory(); // Save the current state for undo functionality
-    const updatedTodos = todos.filter(todo => todo.id !== id); // Filter out the todo with the specified id
-    saveTodos(updatedTodos); // Save the updated list of todos
-    eventEmitter.emit('reminderUpdated'); // Emit an event for update
-  };
+  const handleDeleteTodo = async (id) => {
+  saveHistory(); // Save history for undo functionality
+
+  const updatedTodos = todos.filter(todo => todo.id !== id);
+
+  await saveTodos(updatedTodos); // Save updated todos to AsyncStorage
+  
+  eventEmitter.emit('reminderUpdated'); // Emit event for sync with TodayScreen
+};
 
   const renderRightActions = (id) => (
     <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteTodo(id)}>

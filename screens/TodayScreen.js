@@ -155,15 +155,15 @@ const TodayScreen = () => {
         setIncompleteRemindersCount(todayReminders.filter(reminder => !reminder.completed).length);
       }
     };
-
+  
     loadTodayReminders();
-
+  
     const handleReminderUpdate = () => {
       loadTodayReminders(); // Reload reminders when an update occurs
     };
-
+  
     eventEmitter.on('reminderUpdated', handleReminderUpdate);
-
+  
     // Clean up the listener when the component is unmounted
     return () => {
       eventEmitter.off('reminderUpdated', handleReminderUpdate);

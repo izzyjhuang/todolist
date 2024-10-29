@@ -102,11 +102,16 @@ const AllTodosScreen = () => {
   };
   
   const toggleComplete = (id) => {
+    // Save history for undo functionality
+    saveHistory();
+  
+    // Toggle the completion status without triggering eventEmitter
     const updatedTodos = todos.map(todo =>
       todo.id === id ? { ...todo, completed: !todo.completed } : todo
     );
-    eventEmitter.emit('reminderUpdated'); // Emit an event for update
-    saveTodos(updatedTodos); // Save the updated list with the updated completion status
+  
+    // Save the updated todos without emitting an event
+    saveTodos(updatedTodos);
   };
   const categorizeTodos = () => {
     const now = new Date();

@@ -10,6 +10,7 @@ import AddTodoModal from '../components/AddTodoModal';
 import SettingsModal from '../components/SettingsModal';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Swipeable } from 'react-native-gesture-handler';
+import eventEmitter from '../components/EventEmitter';
 
 const getCurrentTime = () => {
   const now = new Date();
@@ -126,9 +127,9 @@ const TodayScreen = () => {
             <Text style={[styles.reminderDescription, item.completed && styles.completedText]}>{item.description}</Text>
           ) : null}
         </View>
-        <Text style={[styles.reminderDate, item.completed && styles.completedText]}>
+        {/* <Text style={[styles.reminderDate, item.completed && styles.completedText]}>
           {new Date(item.date).toLocaleDateString('en-US')}
-        </Text>
+        </Text> */}
       </TouchableOpacity>
     </Swipeable>
   );
@@ -143,12 +144,28 @@ const TodayScreen = () => {
   useEffect(() => {
     const loadTodayReminders = async () => {
       const storedTodos = await AsyncStorage.getItem('todos');
+      const todayDate = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
       if (storedTodos) {
         const todos = JSON.parse(storedTodos);
-        filterTodayReminders(todos); // Filter for today's reminders
+        const todayReminders = todos.filter(
+          (todo) => new Date(todo.date).toISOString().split('T')[0] === todayDate
+        );
+        setReminders(todayReminders);
       }
     };
+  
     loadTodayReminders();
+  
+    const handleReminderUpdate = () => {
+      loadTodayReminders(); // Reload reminders when an update occurs
+    };
+  
+    eventEmitter.on('reminderUpdated', handleReminderUpdate);
+  
+    // Clean up the listener when the component is unmounted
+    return () => {
+      eventEmitter.off('reminderUpdated', handleReminderUpdate);
+    };
   }, []);
 
   const toggleRemindersVisibility = () => {
@@ -465,7 +482,19 @@ const TodayScreen = () => {
       </View>
       <View style={styles.headerContainer}>
         <Text style={styles.header}>{getFormattedDate()}</Text>
-        <Button title={isRemindersVisible ? "Hide Reminders" : "Show Reminders"} onPress={toggleRemindersVisibility} />
+        <TouchableOpacity onPress={toggleRemindersVisibility}>
+          <Text
+            style={[
+              styles.remindersButton,
+              { fontWeight: reminders.length > 0 ? 'bold' : 'normal',
+                fontSize: 18,
+                color: '#1E8AFF',
+               } // Conditional font weight
+            ]}
+          >
+            {isRemindersVisible ? `Hide Reminders` : `Reminders (${reminders.length})`}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* Collapsible Reminder Section */}
@@ -706,6 +735,9 @@ const styles = StyleSheet.create({
     width: '100%',
     marginBottom: 20,
     alignItems: 'flex-start',
+  },
+  datePicker: {
+    width: '40%',
   },
   noRemindersText: {
     fontSize: 16,

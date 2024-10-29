@@ -6,6 +6,7 @@ import DateTimePicker from '@react-native-community/datetimepicker';
 import { Swipeable } from 'react-native-gesture-handler';
 import { v4 as uuidv4 } from 'uuid';
 import 'react-native-get-random-values';
+import eventEmitter from '../components/EventEmitter';
 
 const AllTodosScreen = () => {
   const [todos, setTodos] = useState([]);
@@ -81,16 +82,18 @@ const AllTodosScreen = () => {
     }
   
     saveTodos(updatedTodos); // Save the updated list of todos
+    eventEmitter.emit('reminderUpdated'); // Emit an event for update
     setModalVisible(false); // Close the modal after adding or editing
     setNewTitle(''); // Reset the title input
     setNewDescription(''); // Reset the description input
     setNewDate(new Date()); // Reset the date input to today’s date
   };
-
+  
   const toggleComplete = (id) => {
     const updatedTodos = todos.map(todo =>
       todo.id === id ? { ...todo, completed: !todo.completed } : todo
     );
+    eventEmitter.emit('reminderUpdated'); // Emit an event for update
     saveTodos(updatedTodos); // Save the updated list with the updated completion status
   };
   const categorizeTodos = () => {
@@ -136,6 +139,7 @@ const AllTodosScreen = () => {
     saveHistory(); // Save the current state for undo functionality
     const updatedTodos = todos.filter(todo => todo.id !== id); // Filter out the todo with the specified id
     saveTodos(updatedTodos); // Save the updated list of todos
+    eventEmitter.emit('reminderUpdated'); // Emit an event for update
   };
 
   const renderRightActions = (id) => (
@@ -323,7 +327,7 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
   },
   datePicker: {
-    width: '100%',
+    width: '40%',
   },
   deleteButton: {
     backgroundColor: 'red',

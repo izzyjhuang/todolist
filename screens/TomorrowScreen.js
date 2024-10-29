@@ -1,25 +1,34 @@
 // TomorrowScreen.js
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Button } from 'react-native';
-import { usePriorities } from '../components/PrioritiesContext';
-
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Button, Modal, TextInput } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import AddTodoModal from '../components/AddTodoModal';
 import SettingsModal from '../components/SettingsModal';
+import DateTimePicker from '@react-native-community/datetimepicker';
+import { Swipeable } from 'react-native-gesture-handler';
+import { usePriorities } from '../components/PrioritiesContext';
+
+// Function to get tomorrow's date in the format "YYYY-MM-DD" for easier comparison
+const getTomorrowDate = () => {
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  return tomorrow.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+};
 
 // Function to get tomorrow's date in the format "Wed, Oct 23"
 const getFormattedDate = () => {
-    const today = new Date();
-    const tomorrow = new Date(today);
-    tomorrow.setDate(today.getDate() + 1);
-    return new Intl.DateTimeFormat('en-US', {
-      weekday: 'long',
-      month: 'short',
-      day: 'numeric',
-    }).format(tomorrow); // Outputs in the format: Wed, Oct 23
-  };
+  const today = new Date();
+  const tomorrow = new Date(today);
+  tomorrow.setDate(today.getDate() + 1);
+  return new Intl.DateTimeFormat('en-US', {
+    weekday: 'long',
+    month: 'short',
+    day: 'numeric',
+  }).format(tomorrow); // Outputs in the format: Wed, Oct 23
+};
 
 const generateTimeBlocks = (interval = 15, dayStart = '6:00', dayEnd = '23:00') => {
   const blocks = [];
@@ -70,8 +79,104 @@ const TomorrowScreen = () => {
   const [entryBlock, setEntryBlock] = useState(null);
   const [history, setHistory] = useState([]);
   const [future, setFuture] = useState([]);
-
+  const [reminders, setReminders] = useState([]);
+  const [isRemindersVisible, setIsRemindersVisible] = useState(false); // Toggle for collapsible section
   const [timeInterval, setTimeInterval] = useState(15);
+  const [editingReminder, setEditingReminder] = useState(null);
+  const [newTitle, setNewTitle] = useState('');
+  const [newDescription, setNewDescription] = useState('');
+  const [newDate, setNewDate] = useState(new Date());
+
+  // Load reminders for tomorrow from AsyncStorage
+  useEffect(() => {
+    const loadTomorrowReminders = async () => {
+      const storedTodos = await AsyncStorage.getItem('todos');
+      const tomorrowDate = getTomorrowDate();
+      if (storedTodos) {
+        const todos = JSON.parse(storedTodos);
+        const tomorrowReminders = todos.filter(
+          (todo) => new Date(todo.date).toISOString().split('T')[0] === tomorrowDate
+        );
+        setReminders(tomorrowReminders);
+      }
+    };
+    loadTomorrowReminders();
+  }, []);
+
+  const toggleRemindersVisibility = () => {
+    setIsRemindersVisible(!isRemindersVisible);
+  };
+
+  const saveReminders = async (updatedReminders) => {
+    setReminders(updatedReminders);
+    const storedTodos = await AsyncStorage.getItem('todos');
+    if (storedTodos) {
+      const todos = JSON.parse(storedTodos);
+      const otherTodos = todos.filter(
+        (todo) => new Date(todo.date).toISOString().split('T')[0] !== getTomorrowDate()
+      );
+      await AsyncStorage.setItem('todos', JSON.stringify([...otherTodos, ...updatedReminders]));
+    }
+  };
+
+  const renderReminderItem = ({ item }) => (
+    <Swipeable renderRightActions={() => renderRightActions(item.id)}>
+      <TouchableOpacity onPress={() => openEditModal(item)} style={styles.reminderItem}>
+        <TouchableOpacity onPress={() => toggleComplete(item.id)}>
+          <Icon name={item.completed ? "check-circle" : "radio-button-unchecked"} size={24} color={item.completed ? "green" : "gray"} />
+        </TouchableOpacity>
+        <View style={styles.reminderTextContainer}>
+          <Text style={[styles.reminderTitle, item.completed && styles.completedText]}>{item.title}</Text>
+          {item.description ? (
+            <Text style={[styles.reminderDescription, item.completed && styles.completedText]}>{item.description}</Text>
+          ) : null}
+        </View>
+        <Text style={[styles.reminderDate, item.completed && styles.completedText]}>
+          {new Date(item.date).toLocaleDateString('en-US')}
+        </Text>
+      </TouchableOpacity>
+    </Swipeable>
+  );
+
+  const toggleComplete = (id) => {
+    const updatedReminders = reminders.map(reminder =>
+      reminder.id === id ? { ...reminder, completed: !reminder.completed } : reminder
+    );
+    saveReminders(updatedReminders); // Save the updated list with the completion status
+  };
+
+  const handleDeleteReminder = (id) => {
+    const updatedReminders = reminders.filter(reminder => reminder.id !== id); // Filter out the reminder
+    saveReminders(updatedReminders); // Save the updated list after deletion
+  };
+
+  const openEditModal = (reminder) => {
+    setEditingReminder(reminder.id);
+    setNewTitle(reminder.title);
+    setNewDescription(reminder.description || '');
+    setNewDate(new Date(reminder.date));
+    setModalVisible(true);
+  };
+
+  const handleSaveEdit = () => {
+    const updatedReminders = reminders.map(reminder =>
+      reminder.id === editingReminder
+        ? { ...reminder, title: newTitle, description: newDescription, date: newDate }
+        : reminder
+    );
+    saveReminders(updatedReminders);
+    setModalVisible(false);
+    setEditingReminder(null);
+    setNewTitle('');
+    setNewDescription('');
+    setNewDate(new Date());
+  };
+
+  const renderRightActions = (id) => (
+    <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteReminder(id)}>
+      <Text style={styles.deleteButtonText}>Delete</Text>
+    </TouchableOpacity>
+  );
 
   useEffect(() => {
     const loadTomorrowTasks = async () => {
@@ -300,7 +405,54 @@ const TomorrowScreen = () => {
         <Button title="↻" onPress={handleRestore} disabled={future.length === 0} />
         <Button title={isSelecting ? "Cancel Select" : "Select"} onPress={toggleSelectMode} />
       </View>
-      <Text style={styles.header}>{getFormattedDate()}</Text>
+      <View style={styles.headerContainer}>
+        <Text style={styles.header}>{getFormattedDate()}</Text>
+        <Button title={isRemindersVisible ? "Hide Reminders" : "Show Reminders"} onPress={toggleRemindersVisibility} />
+      </View>
+
+      {/* Collapsible Reminder Section */}
+      {isRemindersVisible && (
+          <View style={styles.remindersContainer}>
+            <FlatList
+              data={reminders}
+              keyExtractor={(item) => item.id}
+              renderItem={renderReminderItem}
+              ListEmptyComponent={<Text style={styles.noRemindersText}>There are no reminders for tomorrow</Text>} // Display message if empty
+            />
+          </View>
+        )}
+
+      {/* Edit Modal */}
+      <Modal visible={modalVisible} animationType="slide" transparent={true}>
+        <View style={styles.modalContainer}>
+          <View style={styles.modalContent}>
+            <Text style={styles.modalTitle}>Edit Reminder</Text>
+            <TextInput
+              placeholder="Title"
+              value={newTitle}
+              onChangeText={setNewTitle}
+              style={styles.input}
+            />
+            <TextInput
+              placeholder="Description (Optional)"
+              value={newDescription}
+              onChangeText={setNewDescription}
+              style={styles.input}
+            />
+            <View style={styles.datePickerContainer}>
+              <DateTimePicker
+                value={newDate}
+                mode="date"
+                display="default"
+                onChange={(event, selectedDate) => setNewDate(selectedDate || new Date())}
+                style={styles.datePicker}
+              />
+            </View>
+            <Button title="Save Changes" onPress={handleSaveEdit} />
+            <Button title="Close" onPress={() => setModalVisible(false)} />
+          </View>
+        </View>
+      </Modal>
 
       <SettingsModal
         visible={settingsVisible}
@@ -408,6 +560,90 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-around',
     marginTop: 10,
+  },
+  remindersContainer: {
+    // marginTop: 10,
+    padding: 10,
+    backgroundColor: '#f1f1f1',
+    borderRadius: 5,
+  },
+  remindersHeader: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  reminderItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 15,
+    borderBottomWidth: 1,
+    borderColor: '#eee',
+  },
+  reminderTextContainer: {
+    flex: 1,
+    flexDirection: 'column',
+    marginLeft: 10,
+  },
+  reminderTitle: {
+    fontSize: 16,
+  },
+  reminderDescription: {
+    fontSize: 14,
+    color: 'blue',
+    marginTop: 2,
+  },
+  reminderDate: {
+    fontSize: 14,
+    color: '#666',
+  },
+  deleteButton: {
+    backgroundColor: 'red',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    height: '100%',
+  },
+  deleteButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  completedText: {
+    color: 'gray',
+    textDecorationLine: 'line-through',
+  },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  modalContent: {
+    width: '90%',
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+  },
+  input: {
+    borderBottomWidth: 1,
+    marginBottom: 20,
+    padding: 10,
+    fontSize: 16,
+  },
+  datePickerContainer: {
+    width: '100%',
+    marginBottom: 20,
+    alignItems: 'flex-start',
+  },
+  noRemindersText: {
+    fontSize: 16,
+    color: '#888',
+    textAlign: 'center',
+    marginVertical: 10,
   },
 });
 

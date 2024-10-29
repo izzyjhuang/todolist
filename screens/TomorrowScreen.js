@@ -149,12 +149,17 @@ const TomorrowScreen = () => {
 
   const saveReminders = async (updatedReminders) => {
     setReminders(updatedReminders);
+    
+    // Retrieve all todos from storage
     const storedTodos = await AsyncStorage.getItem('todos');
+    
     if (storedTodos) {
       const todos = JSON.parse(storedTodos);
       const otherTodos = todos.filter(
         (todo) => new Date(todo.date).toISOString().split('T')[0] !== getTomorrowDate()
       );
+      
+      // Update AsyncStorage with tomorrow’s updated reminders and other todos
       await AsyncStorage.setItem('todos', JSON.stringify([...otherTodos, ...updatedReminders]));
     }
   };
@@ -167,16 +172,23 @@ const TomorrowScreen = () => {
     setEditModalVisible(true);
 };
 
-const handleSaveEdit = () => {
+const handleSaveEdit = async () => {
   const updatedReminders = reminders.map(reminder =>
     reminder.id === editingReminder
       ? { ...reminder, title: newTitle, description: newDescription, date: newDate }
       : reminder
   );
+
+  // Save updated reminders to AsyncStorage
+  await saveReminders(updatedReminders); 
   
-  saveReminders(updatedReminders); // Save updated reminders
-  filterTomorrowReminders(updatedReminders); // Re-check dates for tomorrow's reminders
+  // Filter to show only tomorrow’s reminders
+  filterTomorrowReminders(updatedReminders); 
   
+  // Emit an event to notify AllTodosScreen of the update
+  eventEmitter.emit('reminderUpdated');
+  
+  // Close the edit modal and reset state
   setEditModalVisible(false);
   setEditingReminder(null);
   setNewTitle('');

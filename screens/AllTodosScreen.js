@@ -32,7 +32,7 @@ const AllTodosScreen = () => {
   
     loadTodos(); // Initial load
   
-    // Listen for updates to refresh the todos
+    // Listen for the reminderUpdated event to refresh the todos
     const handleReminderUpdate = () => {
       loadTodos(); // Reload todos from storage when an update occurs
     };

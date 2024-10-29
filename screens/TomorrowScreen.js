@@ -91,13 +91,9 @@ const TomorrowScreen = () => {
   useEffect(() => {
     const loadTomorrowReminders = async () => {
       const storedTodos = await AsyncStorage.getItem('todos');
-      const tomorrowDate = getTomorrowDate();
       if (storedTodos) {
         const todos = JSON.parse(storedTodos);
-        const tomorrowReminders = todos.filter(
-          (todo) => new Date(todo.date).toISOString().split('T')[0] === tomorrowDate
-        );
-        setReminders(tomorrowReminders);
+        filterTomorrowReminders(todos); // Filter for tomorrow's reminders
       }
     };
     loadTomorrowReminders();
@@ -164,12 +160,23 @@ const TomorrowScreen = () => {
         ? { ...reminder, title: newTitle, description: newDescription, date: newDate }
         : reminder
     );
-    saveReminders(updatedReminders);
+    
+    saveReminders(updatedReminders); // Save updated reminders
+    filterTomorrowReminders(updatedReminders); // Re-check dates for tomorrow's reminders
+    
     setModalVisible(false);
     setEditingReminder(null);
     setNewTitle('');
     setNewDescription('');
     setNewDate(new Date());
+  };
+
+  const filterTomorrowReminders = (reminders) => {
+    const tomorrowDate = getTomorrowDate(); // Get tomorrow's date in "YYYY-MM-DD" format
+    const tomorrowReminders = reminders.filter(
+      (reminder) => new Date(reminder.date).toISOString().split('T')[0] === tomorrowDate
+    );
+    setReminders(tomorrowReminders);
   };
 
   const renderRightActions = (id) => (

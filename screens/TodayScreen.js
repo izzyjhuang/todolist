@@ -143,13 +143,9 @@ const TodayScreen = () => {
   useEffect(() => {
     const loadTodayReminders = async () => {
       const storedTodos = await AsyncStorage.getItem('todos');
-      const todayDate = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
       if (storedTodos) {
         const todos = JSON.parse(storedTodos);
-        const todayReminders = todos.filter(
-          (todo) => new Date(todo.date).toISOString().split('T')[0] === todayDate
-        );
-        setReminders(todayReminders);
+        filterTodayReminders(todos); // Filter for today's reminders
       }
     };
     loadTodayReminders();
@@ -185,12 +181,24 @@ const TodayScreen = () => {
         ? { ...reminder, title: newTitle, description: newDescription, date: newDate }
         : reminder
     );
-    saveReminders(updatedReminders);
+    
+    saveReminders(updatedReminders); // Save updated reminders
+    filterTodayReminders(updatedReminders); // Re-check dates for today's reminders
+    
     setModalVisible(false);
     setEditingReminder(null);
     setNewTitle('');
     setNewDescription('');
     setNewDate(new Date());
+  };
+  
+  // Helper function to filter and set only today's reminders
+  const filterTodayReminders = (reminders) => {
+    const todayDate = new Date().toISOString().split('T')[0]; // Get today's date in "YYYY-MM-DD" format
+    const todayReminders = reminders.filter(
+      (reminder) => new Date(reminder.date).toISOString().split('T')[0] === todayDate
+    );
+    setReminders(todayReminders);
   };
 
   const toggleComplete = (id) => {

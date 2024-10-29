@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, FlatList, Modal, TextInput, TouchableOpacity, StyleSheet, Button } from 'react-native';
+import { View, Text, SectionList, Modal, TextInput, TouchableOpacity, StyleSheet, Button } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -19,15 +19,18 @@ const AllTodosScreen = () => {
     const loadTodos = async () => {
       const storedTodos = await AsyncStorage.getItem('todos');
       if (storedTodos) {
-        setTodos(JSON.parse(storedTodos));
+        const parsedTodos = JSON.parse(storedTodos);
+        const sortedTodos = parsedTodos.sort((a, b) => new Date(a.date) - new Date(b.date));
+        setTodos(sortedTodos);
       }
     };
     loadTodos();
   }, []);
 
   const saveTodos = async (updatedTodos) => {
-    setTodos(updatedTodos);
-    await AsyncStorage.setItem('todos', JSON.stringify(updatedTodos));
+    const sortedTodos = updatedTodos.sort((a, b) => new Date(a.date) - new Date(b.date));
+    setTodos(sortedTodos);
+    await AsyncStorage.setItem('todos', JSON.stringify(sortedTodos));
   };
 
   const saveHistory = () => {
@@ -55,16 +58,13 @@ const AllTodosScreen = () => {
 
   const handleAddOrEditTodo = () => {
     saveHistory();
-    const formattedDate = newDate.toLocaleDateString('en-US');
     const updatedTodos = [...todos];
 
     if (editingIndex !== null) {
-      // Update an existing todo
-      updatedTodos[editingIndex] = { title: newTitle, description: newDescription, date: formattedDate };
+      updatedTodos[editingIndex] = { ...updatedTodos[editingIndex], title: newTitle, description: newDescription, date: newDate };
       setEditingIndex(null);
     } else {
-      // Add a new todo
-      const newTodo = { title: newTitle, description: newDescription, date: formattedDate };
+      const newTodo = { title: newTitle, description: newDescription, date: newDate, completed: false };
       updatedTodos.push(newTodo);
     }
 
@@ -72,18 +72,49 @@ const AllTodosScreen = () => {
     setModalVisible(false);
     setNewTitle('');
     setNewDescription('');
-    setNewDate(new Date()); // Reset to today's date after adding/editing
+    setNewDate(new Date());
+  };
+
+  const toggleComplete = (index) => {
+    const updatedTodos = [...todos];
+    updatedTodos[index].completed = !updatedTodos[index].completed;
+    saveTodos(updatedTodos);
+  };
+
+  const categorizeTodos = () => {
+    const now = new Date();
+    const todayDate = now.toDateString();
+    const endOfWeek = new Date(now);
+    endOfWeek.setDate(now.getDate() + 7);
+
+    const sections = [
+      { title: 'Past Due', data: [] },
+      { title: 'Today', data: [] },
+      { title: 'This Week', data: [] },
+      { title: 'Scheduled', data: [] },
+    ];
+
+    todos.forEach(todo => {
+      const todoDate = new Date(todo.date);
+      if (todoDate < now && todoDate.toDateString() !== todayDate) {
+        sections[0].data.push(todo);
+      } else if (todoDate.toDateString() === todayDate) {
+        sections[1].data.push(todo);
+      } else if (todoDate > now && todoDate <= endOfWeek) {
+        sections[2].data.push(todo);
+      } else if (todoDate > endOfWeek) {
+        sections[3].data.push(todo);
+      }
+    });
+
+    return sections.filter(section => section.data.length > 0);
   };
 
   const handleEditTodo = (index) => {
     const todo = todos[index];
     setNewTitle(todo.title);
     setNewDescription(todo.description);
-    
-    // Parse date string to Date object; fallback to today's date if parsing fails
-    const parsedDate = new Date(todo.date);
-    setNewDate(isNaN(parsedDate) ? new Date() : parsedDate);
-    
+    setNewDate(new Date(todo.date));
     setEditingIndex(index);
     setModalVisible(true);
   };
@@ -103,45 +134,44 @@ const AllTodosScreen = () => {
   const renderTodo = ({ item, index }) => (
     <Swipeable renderRightActions={() => renderRightActions(index)}>
       <TouchableOpacity onPress={() => handleEditTodo(index)} style={styles.todoItem}>
+        <TouchableOpacity onPress={() => toggleComplete(index)}>
+          <Icon name={item.completed ? "check-circle" : "radio-button-unchecked"} size={24} color={item.completed ? "green" : "gray"} />
+        </TouchableOpacity>
         <View style={styles.todoTextContainer}>
-          <Text style={styles.todoText}>{item.title}</Text>
+          <Text style={[styles.todoText, item.completed && styles.completedText]}>{item.title}</Text>
           {item.description ? (
-            <Text style={styles.descriptionText}>{item.description}</Text>
+            <Text style={[styles.descriptionText, item.completed && styles.completedText]}>{item.description}</Text>
           ) : null}
         </View>
-        <Text style={styles.dateText}>{item.date}</Text>
+        <Text style={[styles.dateText, item.completed && styles.completedText]}>{new Date(item.date).toLocaleDateString('en-US')}</Text>
       </TouchableOpacity>
     </Swipeable>
   );
 
-  const handleDateChange = (event, selectedDate) => {
-    const currentDate = selectedDate || new Date(); // Fallback to today's date if selectedDate is undefined
-    setNewDate(currentDate);
-  };
-
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <Text style={styles.headerText}>Today</Text>
+        <Text style={styles.headerText}>Todos</Text>
         <View style={styles.buttonContainer}>
           <Button title="↺" onPress={handleUndo} disabled={history.length === 0} />
           <Button title="↻" onPress={handleRedo} disabled={future.length === 0} />
         </View>
       </View>
-      <Text style={styles.subHeaderText}>{new Date().toDateString()}</Text>
-      <FlatList
-        data={todos}
+
+      <SectionList
+        sections={categorizeTodos()}
         renderItem={renderTodo}
+        renderSectionHeader={({ section: { title } }) => (
+          <Text style={styles.sectionHeader}>{title}</Text>
+        )}
         keyExtractor={(item, index) => index.toString()}
         contentContainerStyle={styles.listContainer}
       />
 
-      {/* Add TODO Button */}
       <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
         <Icon name="add" size={30} color="white" />
       </TouchableOpacity>
 
-      {/* Add/Edit TODO Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent={true}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
@@ -158,18 +188,15 @@ const AllTodosScreen = () => {
               onChangeText={setNewDescription}
               style={styles.input}
             />
-
-            {/* Inline Date Picker as Input */}
             <View style={styles.datePickerContainer}>
               <DateTimePicker
-                value={newDate} // Ensure newDate is always a valid Date object
+                value={newDate}
                 mode="date"
                 display="default"
-                onChange={handleDateChange}
+                onChange={(event, selectedDate) => setNewDate(selectedDate || new Date())}
                 style={styles.datePicker}
               />
             </View>
-
             <Button title={editingIndex !== null ? 'Save Changes' : 'Add'} onPress={handleAddOrEditTodo} />
             <Button title="Close" onPress={() => setModalVisible(false)} />
           </View>
@@ -217,6 +244,7 @@ const styles = StyleSheet.create({
   todoTextContainer: {
     flex: 1,
     flexDirection: 'column',
+    marginLeft: 10,
   },
   descriptionText: {
     fontSize: 14,
@@ -225,7 +253,6 @@ const styles = StyleSheet.create({
   },
   todoText: {
     fontSize: 16,
-    flex: 1,
   },
   dateText: {
     fontSize: 14,
@@ -289,6 +316,16 @@ const styles = StyleSheet.create({
   deleteButtonText: {
     color: 'white',
     fontWeight: 'bold',
+  },
+  sectionHeader: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1E8AFF',
+    marginVertical: 10,
+  },
+  completedText: {
+    color: 'gray',
+    textDecorationLine: 'line-through',
   },
 });
 

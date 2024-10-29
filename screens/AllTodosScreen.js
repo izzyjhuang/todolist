@@ -4,7 +4,8 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Swipeable } from 'react-native-gesture-handler';
-
+import { v4 as uuidv4 } from 'uuid';
+import 'react-native-get-random-values';
 
 const AllTodosScreen = () => {
   const [todos, setTodos] = useState([]);
@@ -20,7 +21,11 @@ const AllTodosScreen = () => {
     const loadTodos = async () => {
       const storedTodos = await AsyncStorage.getItem('todos');
       if (storedTodos) {
-        const parsedTodos = JSON.parse(storedTodos);
+        let parsedTodos = JSON.parse(storedTodos);
+        parsedTodos = parsedTodos.map(todo => ({
+          ...todo,
+          id: todo.id || uuidv4() // Assign a UUID if it doesn't already have one
+        }));
         const sortedTodos = parsedTodos.sort((a, b) => new Date(a.date) - new Date(b.date));
         setTodos(sortedTodos);
       }
@@ -58,30 +63,36 @@ const AllTodosScreen = () => {
   };
 
   const handleAddOrEditTodo = () => {
-    saveHistory();
-    const updatedTodos = [...todos];
-
+    saveHistory(); // Save the current state for undo functionality
+    let updatedTodos;
+  
     if (editingIndex !== null) {
-      updatedTodos[editingIndex] = { ...updatedTodos[editingIndex], title: newTitle, description: newDescription, date: newDate };
-      setEditingIndex(null);
+      // Editing an existing todo
+      updatedTodos = todos.map(todo =>
+        todo.id === editingIndex
+          ? { ...todo, title: newTitle, description: newDescription, date: newDate }
+          : todo
+      );
+      setEditingIndex(null); // Reset editing index after editing
     } else {
-      const newTodo = { title: newTitle, description: newDescription, date: newDate, completed: false };
-      updatedTodos.push(newTodo);
+      // Adding a new todo
+      const newTodo = { id: uuidv4(), title: newTitle, description: newDescription, date: newDate, completed: false };
+      updatedTodos = [...todos, newTodo];
     }
-
-    saveTodos(updatedTodos);
-    setModalVisible(false);
-    setNewTitle('');
-    setNewDescription('');
-    setNewDate(new Date());
+  
+    saveTodos(updatedTodos); // Save the updated list of todos
+    setModalVisible(false); // Close the modal after adding or editing
+    setNewTitle(''); // Reset the title input
+    setNewDescription(''); // Reset the description input
+    setNewDate(new Date()); // Reset the date input to today’s date
   };
 
-  const toggleComplete = (index) => {
-    const updatedTodos = [...todos];
-    updatedTodos[index].completed = !updatedTodos[index].completed;
-    saveTodos(updatedTodos);
+  const toggleComplete = (id) => {
+    const updatedTodos = todos.map(todo =>
+      todo.id === id ? { ...todo, completed: !todo.completed } : todo
+    );
+    saveTodos(updatedTodos); // Save the updated list with the updated completion status
   };
-
   const categorizeTodos = () => {
     const now = new Date();
     const todayDate = now.toDateString();
@@ -111,49 +122,49 @@ const AllTodosScreen = () => {
     return sections.filter(section => section.data.length > 0);
   };
 
-  const handleEditTodo = (index) => {
-    saveHistory();
-    const todo = todos[index];
-    setNewTitle(todo.title);
-    setNewDescription(todo.description || '');
-    setNewDate(new Date(todo.date));
-    setEditingIndex(index);
-    setModalVisible(true);
+  const handleEditTodo = (id) => {
+    saveHistory(); // Save the current state for undo functionality
+    const todo = todos.find(todo => todo.id === id); // Find the todo by id
+    setNewTitle(todo.title); // Populate modal with the todo title
+    setNewDescription(todo.description || ''); // Populate modal with the todo description
+    setNewDate(new Date(todo.date)); // Populate modal with the todo date
+    setEditingIndex(id); // Set the id of the todo being edited
+    setModalVisible(true); // Show the modal for editing
   };
 
-  const handleDeleteTodo = (index) => {
-    saveHistory();
-    const updatedTodos = todos.filter((_, i) => i !== index);
-    saveTodos(updatedTodos);
+  const handleDeleteTodo = (id) => {
+    saveHistory(); // Save the current state for undo functionality
+    const updatedTodos = todos.filter(todo => todo.id !== id); // Filter out the todo with the specified id
+    saveTodos(updatedTodos); // Save the updated list of todos
   };
 
-  const renderRightActions = (index) => (
-    <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteTodo(index)}>
+  const renderRightActions = (id) => (
+    <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteTodo(id)}>
       <Text style={styles.deleteButtonText}>Delete</Text>
     </TouchableOpacity>
   );
 
   const renderTodo = ({ item, index }) => (
-    <Swipeable renderRightActions={() => renderRightActions(index)}>
-      <TouchableOpacity onPress={() => handleEditTodo(index)} style={styles.todoItem}>
-        <TouchableOpacity onPress={() => toggleComplete(index)}>
-          <Icon name={item.completed ? "check-circle" : "radio-button-unchecked"} size={24} color={item.completed ? "green" : "gray"} />
+    <Swipeable renderRightActions={() => renderRightActions(item.id)}>
+      <TouchableOpacity onPress={() => handleEditTodo(item.id)} style={styles.todoItem}>
+        <TouchableOpacity onPress={() => toggleComplete(item.id)}>
+            <Icon name={item.completed ? "check-circle" : "radio-button-unchecked"} size={24} color={item.completed ? "green" : "gray"} />
         </TouchableOpacity>
         <View style={styles.todoTextContainer}>
-          <Text style={[styles.todoText, item.completed && styles.completedText]}>{item.title}</Text>
-          {item.description ? (
+            <Text style={[styles.todoText, item.completed && styles.completedText]}>{item.title}</Text>
+            {item.description ? (
             <Text style={[styles.descriptionText, item.completed && styles.completedText]}>{item.description}</Text>
-          ) : null}
+            ) : null}
         </View>
         <Text style={[styles.dateText, item.completed && styles.completedText]}>{new Date(item.date).toLocaleDateString('en-US')}</Text>
-      </TouchableOpacity>
+        </TouchableOpacity>
     </Swipeable>
   );
 
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
-        <Text style={styles.headerText}>Todos</Text>
+        <Text style={styles.headerText}>Reminders</Text>
         <View style={styles.buttonContainer}>
           <Button title="↺" onPress={handleUndo} disabled={history.length === 0} />
           <Button title="↻" onPress={handleRedo} disabled={future.length === 0} />
@@ -164,11 +175,11 @@ const AllTodosScreen = () => {
         sections={categorizeTodos()}
         renderItem={renderTodo}
         renderSectionHeader={({ section: { title } }) => (
-          <Text style={styles.sectionHeader}>{title}</Text>
+            <Text style={styles.sectionHeader}>{title}</Text>
         )}
-        keyExtractor={(item, index) => index.toString()}
+        keyExtractor={(item) => item.id} // Use id as the key
         contentContainerStyle={styles.listContainer}
-      />
+        />
 
       <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
         <Icon name="add" size={30} color="white" />
@@ -176,34 +187,40 @@ const AllTodosScreen = () => {
 
       <Modal visible={modalVisible} animationType="slide" transparent={true}>
         <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
+            <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>{editingIndex !== null ? 'Edit Reminder' : 'Add Reminder'}</Text>
             <TextInput
-              placeholder="Title"
-              value={newTitle}
-              onChangeText={setNewTitle}
-              style={styles.input}
+                placeholder="Title"
+                value={newTitle}
+                onChangeText={setNewTitle}
+                style={styles.input}
             />
             <TextInput
-              placeholder="Description (Optional)"
-              value={newDescription}
-              onChangeText={setNewDescription}
-              style={styles.input}
+                placeholder="Description (Optional)"
+                value={newDescription}
+                onChangeText={setNewDescription}
+                style={styles.input}
             />
             <View style={styles.datePickerContainer}>
-              <DateTimePicker
+                <DateTimePicker
                 value={newDate}
                 mode="date"
                 display="default"
                 onChange={(event, selectedDate) => setNewDate(selectedDate || new Date())}
                 style={styles.datePicker}
-              />
+                />
             </View>
             <Button title={editingIndex !== null ? 'Save Changes' : 'Add'} onPress={handleAddOrEditTodo} />
-            <Button title="Close" onPress={() => setModalVisible(false)} />
-          </View>
+            <Button title="Close" onPress={() => {
+            setNewTitle('');         // Clear title field
+            setNewDescription('');    // Clear description field
+            setNewDate(new Date());   // Reset date to today
+            setEditingIndex(null);    // Ensure we're in add mode
+            setModalVisible(false);   // Close the modal
+            }} />
+            </View>
         </View>
-      </Modal>
+        </Modal>
     </View>
   );
 };

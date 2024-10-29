@@ -1,6 +1,7 @@
 // App.js
 
 import React, { useEffect } from 'react';
+import { PrioritiesProvider } from './components/PrioritiesContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -71,7 +72,7 @@ export default function App() {
 
     const checkTime = () => {
       const now = new Date();
-      if (now.getHours() === 0 && now.getMinutes() === 0) {
+      if (now.getHours() === 0 && now.getMinutes() === 2) {
         loadRoutineForTomorrow();
       }
     };
@@ -81,6 +82,7 @@ export default function App() {
   }, []);
 
   return (
+    <PrioritiesProvider>
     <NavigationContainer>
       <Tab.Navigator
         screenOptions={({ route }) => ({
@@ -109,5 +111,6 @@ export default function App() {
         <Tab.Screen name="Routine" component={RoutineScreen} />
       </Tab.Navigator>
     </NavigationContainer>
+    </PrioritiesProvider>
   );
 }

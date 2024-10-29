@@ -20,42 +20,44 @@ const getFormattedDate = () => {
     }).format(tomorrow); // Outputs in the format: Wed, Oct 23
   };
 
-const generateTimeBlocks = (interval = 15, dayStart = '6:00', dayEnd = '23:00') => {
-  const blocks = [];
-  let [startHour, startMinute] = dayStart.split(':').map(Number);
-  let [endHour, endMinute] = dayEnd.split(':').map(Number);
-
-  if (endHour === 0) endHour = 24;
-
-  const startTotalMinutes = startHour * 60 + startMinute;
-  const endTotalMinutes = endHour * 60 + endMinute;
-  const totalMinutes = endTotalMinutes - startTotalMinutes;
-  const totalBlocks = Math.floor(totalMinutes / interval);
-  let currentMinutes = startTotalMinutes;
-
-  for (let i = 0; i < totalBlocks; i++) {
-    const startHour = Math.floor(currentMinutes / 60);
-    const startMinute = currentMinutes % 60;
-    const startTime = `${startHour.toString().padStart(2, '0')}:${startMinute
-      .toString()
-      .padStart(2, '0')}`;
-
-    currentMinutes += interval;
-
-    let endHour = Math.floor(currentMinutes / 60);
-    if (endHour === 24) endHour = 0;
-    const endMinute = currentMinutes % 60;
-    const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute
-      .toString()
-      .padStart(2, '0')}`;
-
-    const timeRange = `${startTime}-${endTime}`;
-
-    blocks.push({ id: i.toString(), time: timeRange, title: '', description: '', priority: 'none' });
-  }
-
-  return blocks;
-};
+  const generateTimeBlocks = (interval = 15, dayStartHour = '06', dayStartMinute = '00', dayEndHour = '23', dayEndMinute = '00') => {
+    const blocks = [];
+    let startHour = parseInt(dayStartHour, 10);
+    let startMinute = parseInt(dayStartMinute, 10);
+    let endHour = parseInt(dayEndHour, 10);
+    let endMinute = parseInt(dayEndMinute, 10);
+  
+    if (endHour === 0) endHour = 24;
+  
+    const startTotalMinutes = startHour * 60 + startMinute;
+    const endTotalMinutes = endHour * 60 + endMinute;
+    const totalMinutes = endTotalMinutes - startTotalMinutes;
+    const totalBlocks = Math.floor(totalMinutes / interval);
+    let currentMinutes = startTotalMinutes;
+  
+    for (let i = 0; i < totalBlocks; i++) {
+      const blockStartHour = Math.floor(currentMinutes / 60);
+      const blockStartMinute = currentMinutes % 60;
+      const startTime = `${blockStartHour.toString().padStart(2, '0')}:${blockStartMinute
+        .toString()
+        .padStart(2, '0')}`;
+  
+      currentMinutes += interval;
+  
+      let blockEndHour = Math.floor(currentMinutes / 60);
+      if (blockEndHour === 24) blockEndHour = 0;
+      const blockEndMinute = currentMinutes % 60;
+      const endTime = `${blockEndHour.toString().padStart(2, '0')}:${blockEndMinute
+        .toString()
+        .padStart(2, '0')}`;
+  
+      const timeRange = `${startTime}-${endTime}`;
+  
+      blocks.push({ id: i.toString(), time: timeRange, title: '', description: '', priority: 'none' });
+    }
+  
+    return blocks;
+  };
 
 const TomorrowScreen = () => {
   const [dayStart, setDayStart] = useState('6:00');

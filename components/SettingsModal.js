@@ -39,7 +39,7 @@ const SettingsModal = ({
     const [dayStartMinuteVisible, setDayStartMinuteVisible] = useState(false); // Visibility for start minute
     const [dayEndHourVisible, setDayEndHourVisible] = useState(false); // Visibility for end hour
     const [dayEndMinuteVisible, setDayEndMinuteVisible] = useState(false); // Visibility for end minute
-    const [dayStartHour, setDayStartHour] = useState('5');
+    const [dayStartHour, setDayStartHour] = useState('05');
     const [dayStartMinute, setDayStartMinute] = useState('00');
     const [dayEndHour, setDayEndHour] = useState('21');
     const [dayEndMinute, setDayEndMinute] = useState('00');
@@ -300,45 +300,59 @@ const SettingsModal = ({
           {/* Day Starts and Day Ends Side by Side */}
           <View style={styles.dayTimeContainer}>
           {/* Day Start Time Selector */}
-          <Text style={styles.subHeader}>Day Starts:</Text>
+          <Text style={styles.subHeader}>Day Starts:   </Text>
           <View style={styles.timeSelectContainer}>
-            <TouchableOpacity
-              style={styles.timeSelectButton}
-              onPress={() => setDayStartHourVisible((prev) => !prev)}
-            >
-              <Text style={styles.timeSelectText}>{dayStartHour}</Text>
-            </TouchableOpacity>
-            {dayStartHourVisible && renderStartHourOptions(setDayStartHour)}
-            <Text style={styles.subHeader}>:</Text>
-            <TouchableOpacity
-              style={styles.timeSelectButton}
-              onPress={() => setDayStartMinuteVisible((prev) => !prev)}
-            >
-              <Text style={styles.timeSelectText}>{dayStartMinute}</Text>
-            </TouchableOpacity>
-            {dayStartMinuteVisible && renderMinuteOptions(setDayStartMinute)}
+            <View style={styles.dayTimeBlock}>
+              <TouchableOpacity
+                style={styles.intervalButton}
+                onPress={() => setDayStartHourVisible((prev) => !prev)}
+              >
+                <Text style={styles.timeSelectText}>{dayStartHour}</Text>
+              </TouchableOpacity>
+              
+              {dayStartHourVisible && renderStartHourOptions(setDayStartHour)}
+            </View>
+
+            {/* {dayStartHourVisible && renderStartHourOptions(setDayStartHour)} */}
+            <Text style={styles.colonText}>:</Text>
+            <View style={styles.dayTimeBlock}>
+              <TouchableOpacity
+                style={styles.intervalButton}
+                onPress={() => setDayStartMinuteVisible((prev) => !prev)}
+              >
+                <Text style={styles.timeSelectText}>{dayStartMinute}</Text>
+              </TouchableOpacity>
+              
+              {dayStartMinuteVisible && renderMinuteOptions(setDayStartMinute)}
+            </View>
           </View>
           </View>
 
           <View style={styles.dayTimeContainer}>
           {/* Day End Time Selector */}
-          <Text style={styles.subHeader}>Day Ends:</Text>
+          <Text style={styles.subHeader}>Day Ends:     </Text>
           <View style={styles.timeSelectContainer}>
-            <TouchableOpacity
-              style={styles.timeSelectButton}
-              onPress={() => setDayEndHourVisible((prev) => !prev)}
-            >
-              <Text style={styles.timeSelectText}>{dayEndHour}</Text>
-            </TouchableOpacity>
-            {dayEndHourVisible && renderEndHourOptions(setDayEndHour)}
-            <Text style={styles.subHeader}>:</Text>
-            <TouchableOpacity
-              style={styles.timeSelectButton}
-              onPress={() => setDayEndMinuteVisible((prev) => !prev)}
-            >
-              <Text style={styles.timeSelectText}>{dayEndMinute}</Text>
-            </TouchableOpacity>
-            {dayEndMinuteVisible && renderMinuteOptions(setDayEndMinute)}
+            <View style={styles.dayTimeBlock}>
+              <TouchableOpacity
+                style={styles.intervalButton}
+                onPress={() => setDayEndHourVisible((prev) => !prev)}
+              >
+                <Text style={styles.timeSelectText}>{dayEndHour}</Text>
+              </TouchableOpacity>
+              
+              {dayEndHourVisible && renderEndHourOptions(setDayEndHour)}
+            </View>
+            <Text style={styles.colonText}>:</Text>
+            <View style={styles.dayTimeBlock}>
+              <TouchableOpacity
+                style={styles.intervalButton}
+                onPress={() => setDayEndMinuteVisible((prev) => !prev)}
+              >
+                <Text style={styles.timeSelectText}>{dayEndMinute}</Text>
+              </TouchableOpacity>
+              
+              {dayEndMinuteVisible && renderMinuteOptions(setDayEndMinute)}
+            </View>
           </View>
           </View>
           </View>
@@ -434,7 +448,8 @@ const styles = StyleSheet.create({
     },
     dayTimeBlock: {
       flex: 1,
-      marginHorizontal: 5, // Adds spacing between the two dropdowns
+      width: 50,
+      marginHorizontal: 0, // Adds spacing between the two dropdowns
     },
     priorityBlock: {
       marginBottom: 20,
@@ -486,6 +501,13 @@ const styles = StyleSheet.create({
       height: 30,
       borderRadius: 15,
       marginHorizontal: 5,
+    },
+        // Add this style to the StyleSheet
+    colonText: {
+      fontSize: 16,
+      fontWeight: 'bold',
+      marginTop: -10, // Adjust this value as needed to move the colon up or down
+      alignSelf: 'center', // Center-aligns it with respect to the row
     },
 
     timeSelectContainer: { flexDirection: 'row', alignItems: 'center' },

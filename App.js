@@ -7,6 +7,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
 
 import TodayScreen from './screens/TodayScreen';
@@ -15,6 +16,8 @@ import SearchScreen from './screens/SearchScreen';
 // import BrowseScreen from './screens/BrowseScreen';
 import DateIcon from './components/DateIcon';
 import RoutineScreen from './screens/RoutineScreen';
+import AllTodosScreen from './screens/AllTodosScreen';
+
 
 
 
@@ -82,35 +85,37 @@ export default function App() {
   }, []);
 
   return (
-    <PrioritiesProvider>
-    <NavigationContainer>
-      <Tab.Navigator
-        screenOptions={({ route }) => ({
-          tabBarIcon: ({ color, size }) => {
-            if (route.name === 'Today') {
-              return <DateIcon weekday={todayWeekday} date={todayDate} />;
-            } else if (route.name === 'Tomorrow') {
-              return <DateIcon weekday={tomorrowWeekday} date={tomorrowDate} />;
-            } else {
-              let iconName;
-              if (route.name === 'Search') {
-                iconName = 'search';
-              } else if (route.name === 'Routine') {
-                iconName = 'schedule';
-              }
-              return <MaterialIcons name={iconName} size={size} color={color} />;
-            }
-          },
-          tabBarActiveTintColor: 'red',
-          tabBarInactiveTintColor: 'gray',
-        })}
-      >
-        <Tab.Screen name="Today" component={TodayScreen} />
-        <Tab.Screen name="Tomorrow" component={TomorrowScreen} />
-        <Tab.Screen name="Search" component={SearchScreen} />
-        <Tab.Screen name="Routine" component={RoutineScreen} />
-      </Tab.Navigator>
-    </NavigationContainer>
-    </PrioritiesProvider>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <PrioritiesProvider>
+        <NavigationContainer>
+          <Tab.Navigator
+            screenOptions={({ route }) => ({
+              tabBarIcon: ({ color, size }) => {
+                if (route.name === 'Today') {
+                  return <DateIcon weekday={todayWeekday} date={todayDate} />;
+                } else if (route.name === 'Tomorrow') {
+                  return <DateIcon weekday={tomorrowWeekday} date={tomorrowDate} />;
+                } else {
+                  let iconName;
+                  if (route.name === 'Reminders') {
+                    iconName = 'notifications';
+                  } else if (route.name === 'Routine') {
+                    iconName = 'schedule';
+                  }
+                  return <MaterialIcons name={iconName} size={size} color={color} />;
+                }
+              },
+              tabBarActiveTintColor: 'red',
+              tabBarInactiveTintColor: 'gray',
+            })}
+          >
+            <Tab.Screen name="Today" component={TodayScreen} />
+            <Tab.Screen name="Tomorrow" component={TomorrowScreen} />
+            <Tab.Screen name="Reminders" component={AllTodosScreen} />
+            <Tab.Screen name="Routine" component={RoutineScreen} />
+          </Tab.Navigator>
+        </NavigationContainer>
+      </PrioritiesProvider>
+    </GestureHandlerRootView>
   );
-}
+};

@@ -1,7 +1,7 @@
 // RoutineScreen.js
 
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Button} from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Button, Modal} from 'react-native';
 import { Picker } from '@react-native-picker/picker';
 import { usePriorities } from '../components/PrioritiesContext';
 
@@ -56,17 +56,11 @@ const RoutineScreen = () => {
   const [entryBlock, setEntryBlock] = useState(null);
   const [history, setHistory] = useState([]);
   const [future, setFuture] = useState([]);
+  const [resetConfirmationVisible, setResetConfirmationVisible] = useState(false); // Confirmation modal visibility
+
 
   const dayOptions = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
-
-
   const [timeInterval, setTimeInterval] = useState(15);
-//   const [customPriorities, setCustomPriorities] = useState({
-//     p1: { label: 'p1', color: '#D6B4FC' },
-//     p2: { label: 'p2', color: '#FF8184' },
-//     p3: { label: 'p3', color: '#FDAA48' },
-//     p4: { label: 'p4', color: '#FFFFC5' }
-//   });
 
   useEffect(() => {
     const loadRoutine = async () => {
@@ -200,6 +194,21 @@ const RoutineScreen = () => {
     }
   };
 
+  const handleReset = () => {
+    saveHistory(); // Save the current state before resetting
+    const clearedBlocks = blocks.map(block => ({ ...block, title: '', description: '', priority: 'none' }));
+    setBlocks(clearedBlocks);
+    setResetConfirmationVisible(false); // Close the confirmation modal after reset
+  };
+
+  const confirmReset = () => {
+    setResetConfirmationVisible(true);
+  };
+
+  const cancelReset = () => {
+    setResetConfirmationVisible(false);
+  };
+
   const handleAddTodo = (newTask) => {
     saveHistory();
 
@@ -307,6 +316,7 @@ const RoutineScreen = () => {
         <TouchableOpacity onPress={() => setSettingsVisible(true)}>
           <Icon name="settings" size={30} color="#1E8AFF" />
         </TouchableOpacity>
+        <Button title="Reset" onPress={confirmReset} />
         <Button title="↺" onPress={handleUndo} disabled={history.length === 0} />
         <Button title="↻" onPress={handleRestore} disabled={future.length === 0} />
         <Button title={isSelecting ? "Cancel Select" : "Select"} onPress={toggleSelectMode} />
@@ -348,7 +358,7 @@ const RoutineScreen = () => {
         </View>
       )}
 
-<AddTodoModal
+    <AddTodoModal
         visible={modalVisible}
         onClose={() => {
           setModalVisible(false);
@@ -361,6 +371,18 @@ const RoutineScreen = () => {
         initialPriority={entryBlock?.priority}
         customPriorities={customPriorities}
       />
+      {/* Reset Confirmation Modal */}
+      <Modal visible={resetConfirmationVisible} transparent={true} animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmationModal}>
+            <Text style={styles.modalText}>This will reset the routine for {selectedDay}.</Text>
+            <View style={styles.modalButtons}>
+              <Button title="Confirm" onPress={handleReset} />
+              <Button title="Cancel" onPress={cancelReset} color="red"/>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -414,6 +436,29 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     color: '#aaa',
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  confirmationModal: {
+    width: 300,
+    padding: 20,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  modalText: {
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '60%',
   },
   timeZonePalette: {
     flexDirection: 'row',

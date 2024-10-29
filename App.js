@@ -15,6 +15,8 @@ import SearchScreen from './screens/SearchScreen';
 // import BrowseScreen from './screens/BrowseScreen';
 import DateIcon from './components/DateIcon';
 import RoutineScreen from './screens/RoutineScreen';
+import AllTodosScreen from './screens/AllTodosScreen';
+
 
 
 
@@ -93,7 +95,7 @@ export default function App() {
               return <DateIcon weekday={tomorrowWeekday} date={tomorrowDate} />;
             } else {
               let iconName;
-              if (route.name === 'Search') {
+              if (route.name === 'Todos') {
                 iconName = 'search';
               } else if (route.name === 'Routine') {
                 iconName = 'schedule';
@@ -107,7 +109,7 @@ export default function App() {
       >
         <Tab.Screen name="Today" component={TodayScreen} />
         <Tab.Screen name="Tomorrow" component={TomorrowScreen} />
-        <Tab.Screen name="Search" component={SearchScreen} />
+        <Tab.Screen name="Todos" component={AllTodosScreen} />
         <Tab.Screen name="Routine" component={RoutineScreen} />
       </Tab.Navigator>
     </NavigationContainer>

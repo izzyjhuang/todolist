@@ -72,12 +72,6 @@ const TomorrowScreen = () => {
   const [future, setFuture] = useState([]);
 
   const [timeInterval, setTimeInterval] = useState(15);
-  // const [customPriorities, setCustomPriorities] = useState({
-  //   p1: { label: 'p1', color: '#D6B4FC' },
-  //   p2: { label: 'p2', color: '#FF8184' },
-  //   p3: { label: 'p3', color: '#FDAA48' },
-  //   p4: { label: 'p4', color: '#FFFFC5' }
-  // });
 
   useEffect(() => {
     const loadTomorrowTasks = async () => {

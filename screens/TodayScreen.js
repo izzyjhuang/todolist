@@ -107,6 +107,7 @@ const TodayScreen = () => {
   const [currentBlockId, setCurrentBlockId] = useState(null);
   const [currentTimeFraction, setCurrentTimeFraction] = useState(null);  // Track time fraction
   const [reminders, setReminders] = useState([]);
+  const [incompleteRemindersCount, setIncompleteRemindersCount] = useState(0);
   const [isRemindersVisible, setIsRemindersVisible] = useState(false);
   const [editingReminder, setEditingReminder] = useState(null);
   const [newTitle, setNewTitle] = useState('');
@@ -151,17 +152,18 @@ const TodayScreen = () => {
           (todo) => new Date(todo.date).toISOString().split('T')[0] === todayDate
         );
         setReminders(todayReminders);
+        setIncompleteRemindersCount(todayReminders.filter(reminder => !reminder.completed).length);
       }
     };
-  
+
     loadTodayReminders();
-  
+
     const handleReminderUpdate = () => {
       loadTodayReminders(); // Reload reminders when an update occurs
     };
-  
+
     eventEmitter.on('reminderUpdated', handleReminderUpdate);
-  
+
     // Clean up the listener when the component is unmounted
     return () => {
       eventEmitter.off('reminderUpdated', handleReminderUpdate);
@@ -222,7 +224,13 @@ const TodayScreen = () => {
     const updatedReminders = reminders.map(reminder =>
       reminder.id === id ? { ...reminder, completed: !reminder.completed } : reminder
     );
+
+    setReminders(updatedReminders);
     saveReminders(updatedReminders);
+    
+
+    // Update the count of incomplete reminders
+    setIncompleteRemindersCount(updatedReminders.filter(reminder => !reminder.completed).length);
   };
 
   const handleDeleteReminder = (id) => {
@@ -486,13 +494,13 @@ const TodayScreen = () => {
           <Text
             style={[
               styles.remindersButton,
-              { fontWeight: reminders.length > 0 ? 'bold' : 'normal',
+              { fontWeight: incompleteRemindersCount > 0 ? 'bold' : 'normal',
                 fontSize: 18,
                 color: '#1E8AFF',
                } // Conditional font weight
             ]}
           >
-            {isRemindersVisible ? `Hide Reminders` : `Reminders (${reminders.length})`}
+            {isRemindersVisible ? `Hide Reminders` : `Reminders (${incompleteRemindersCount})`}
           </Text>
         </TouchableOpacity>
       </View>

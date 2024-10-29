@@ -81,6 +81,7 @@ const TomorrowScreen = () => {
   const [history, setHistory] = useState([]);
   const [future, setFuture] = useState([]);
   const [reminders, setReminders] = useState([]);
+  const [incompleteRemindersCount, setIncompleteRemindersCount] = useState(0);
   const [isRemindersVisible, setIsRemindersVisible] = useState(false); // Toggle for collapsible section
   const [timeInterval, setTimeInterval] = useState(15);
   const [editingReminder, setEditingReminder] = useState(null);
@@ -102,6 +103,8 @@ const TomorrowScreen = () => {
           (todo) => new Date(todo.date).toISOString().split('T')[0] === tomorrowDateString
         );
         setReminders(tomorrowReminders);
+        setIncompleteRemindersCount(tomorrowReminders.filter(reminder => !reminder.completed).length);
+
       }
     };
 
@@ -158,7 +161,11 @@ const TomorrowScreen = () => {
     const updatedReminders = reminders.map(reminder =>
       reminder.id === id ? { ...reminder, completed: !reminder.completed } : reminder
     );
-    saveReminders(updatedReminders); // Save the updated list with the completion status
+    setReminders(updatedReminders);
+    saveReminders(updatedReminders);
+
+    // Update the count of incomplete reminders
+    setIncompleteRemindersCount(updatedReminders.filter(reminder => !reminder.completed).length);
   };
 
   const handleDeleteReminder = (id) => {
@@ -438,13 +445,13 @@ const TomorrowScreen = () => {
           <Text
             style={[
               styles.remindersButton,
-              { fontWeight: reminders.length > 0 ? 'bold' : 'normal',
+              { fontWeight: incompleteRemindersCount > 0 ? 'bold' : 'normal',
                 fontSize: 18,
                 color: '#1E8AFF',
                } // Conditional font weight
             ]}
           >
-            {isRemindersVisible ? `Hide Reminders` : `Reminders (${reminders.length})`}
+            {isRemindersVisible ? `Hide Reminders` : `Reminders (${incompleteRemindersCount})`}
           </Text>
         </TouchableOpacity>
       </View>

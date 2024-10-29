@@ -19,20 +19,32 @@ const AllTodosScreen = () => {
   const [future, setFuture] = useState([]);
 
   useEffect(() => {
-    const loadTodos = async () => {
-      const storedTodos = await AsyncStorage.getItem('todos');
-      if (storedTodos) {
-        let parsedTodos = JSON.parse(storedTodos);
-        parsedTodos = parsedTodos.map(todo => ({
-          ...todo,
-          id: todo.id || uuidv4() // Assign a UUID if it doesn't already have one
-        }));
-        const sortedTodos = parsedTodos.sort((a, b) => new Date(a.date) - new Date(b.date));
-        setTodos(sortedTodos);
-      }
-    };
+  const loadTodos = async () => {
+    const storedTodos = await AsyncStorage.getItem('todos');
+    if (storedTodos) {
+      let parsedTodos = JSON.parse(storedTodos);
+      parsedTodos = parsedTodos.map(todo => ({
+        ...todo,
+        id: todo.id || uuidv4() // Assign a UUID if it doesn't already have one
+      }));
+      const sortedTodos = parsedTodos.sort((a, b) => new Date(a.date) - new Date(b.date));
+      setTodos(sortedTodos);
+    }
+  };
+
+  loadTodos();
+
+  // Listen for updates to refresh the reminders
+  const handleReminderUpdate = () => {
     loadTodos();
-  }, []);
+  };
+
+  eventEmitter.on('reminderUpdated', handleReminderUpdate);
+
+  return () => {
+    eventEmitter.off('reminderUpdated', handleReminderUpdate);
+  };
+}, []);
 
   const saveTodos = async (updatedTodos) => {
     const sortedTodos = updatedTodos.sort((a, b) => new Date(a.date) - new Date(b.date));

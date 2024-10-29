@@ -3,13 +3,15 @@ import { View, Text, FlatList, Modal, TextInput, TouchableOpacity, StyleSheet, B
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import { Swipeable } from 'react-native-gesture-handler';
 
 const AllTodosScreen = () => {
   const [todos, setTodos] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newDescription, setNewDescription] = useState('');
-  const [newDate, setNewDate] = useState(new Date());
+  const [newDate, setNewDate] = useState(new Date()); // Initialize with today's date
+  const [editingIndex, setEditingIndex] = useState(null);
   const [history, setHistory] = useState([]);
   const [future, setFuture] = useState([]);
 
@@ -51,32 +53,69 @@ const AllTodosScreen = () => {
     }
   };
 
-  const handleAddTodo = () => {
+  const handleAddOrEditTodo = () => {
     saveHistory();
     const formattedDate = newDate.toLocaleDateString('en-US');
-    const newTodo = { title: newTitle, description: newDescription, date: formattedDate };
-    const updatedTodos = [...todos, newTodo];
+    const updatedTodos = [...todos];
+
+    if (editingIndex !== null) {
+      // Update an existing todo
+      updatedTodos[editingIndex] = { title: newTitle, description: newDescription, date: formattedDate };
+      setEditingIndex(null);
+    } else {
+      // Add a new todo
+      const newTodo = { title: newTitle, description: newDescription, date: formattedDate };
+      updatedTodos.push(newTodo);
+    }
+
     saveTodos(updatedTodos);
     setModalVisible(false);
     setNewTitle('');
     setNewDescription('');
-    setNewDate(new Date());
+    setNewDate(new Date()); // Reset to today's date after adding/editing
   };
 
-  const renderTodo = ({ item }) => (
-    <View style={styles.todoItem}>
-      <View style={styles.todoTextContainer}>
-        <Text style={styles.todoText}>{item.title}</Text>
-        {item.description ? (
-          <Text style={styles.descriptionText}>{item.description}</Text>
-        ) : null}
-      </View>
-      <Text style={styles.dateText}>{item.date}</Text>
-    </View>
+  const handleEditTodo = (index) => {
+    const todo = todos[index];
+    setNewTitle(todo.title);
+    setNewDescription(todo.description);
+    
+    // Parse date string to Date object; fallback to today's date if parsing fails
+    const parsedDate = new Date(todo.date);
+    setNewDate(isNaN(parsedDate) ? new Date() : parsedDate);
+    
+    setEditingIndex(index);
+    setModalVisible(true);
+  };
+
+  const handleDeleteTodo = (index) => {
+    saveHistory();
+    const updatedTodos = todos.filter((_, i) => i !== index);
+    saveTodos(updatedTodos);
+  };
+
+  const renderRightActions = (index) => (
+    <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteTodo(index)}>
+      <Text style={styles.deleteButtonText}>Delete</Text>
+    </TouchableOpacity>
+  );
+
+  const renderTodo = ({ item, index }) => (
+    <Swipeable renderRightActions={() => renderRightActions(index)}>
+      <TouchableOpacity onPress={() => handleEditTodo(index)} style={styles.todoItem}>
+        <View style={styles.todoTextContainer}>
+          <Text style={styles.todoText}>{item.title}</Text>
+          {item.description ? (
+            <Text style={styles.descriptionText}>{item.description}</Text>
+          ) : null}
+        </View>
+        <Text style={styles.dateText}>{item.date}</Text>
+      </TouchableOpacity>
+    </Swipeable>
   );
 
   const handleDateChange = (event, selectedDate) => {
-    const currentDate = selectedDate || newDate;
+    const currentDate = selectedDate || new Date(); // Fallback to today's date if selectedDate is undefined
     setNewDate(currentDate);
   };
 
@@ -102,11 +141,11 @@ const AllTodosScreen = () => {
         <Icon name="add" size={30} color="white" />
       </TouchableOpacity>
 
-      {/* Add TODO Modal */}
+      {/* Add/Edit TODO Modal */}
       <Modal visible={modalVisible} animationType="slide" transparent={true}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>Add Reminder</Text>
+            <Text style={styles.modalTitle}>{editingIndex !== null ? 'Edit Reminder' : 'Add Reminder'}</Text>
             <TextInput
               placeholder="Title"
               value={newTitle}
@@ -123,7 +162,7 @@ const AllTodosScreen = () => {
             {/* Inline Date Picker as Input */}
             <View style={styles.datePickerContainer}>
               <DateTimePicker
-                value={newDate}
+                value={newDate} // Ensure newDate is always a valid Date object
                 mode="date"
                 display="default"
                 onChange={handleDateChange}
@@ -131,7 +170,7 @@ const AllTodosScreen = () => {
               />
             </View>
 
-            <Button title="Add" onPress={handleAddTodo} />
+            <Button title={editingIndex !== null ? 'Save Changes' : 'Add'} onPress={handleAddOrEditTodo} />
             <Button title="Close" onPress={() => setModalVisible(false)} />
           </View>
         </View>
@@ -181,8 +220,8 @@ const styles = StyleSheet.create({
   },
   descriptionText: {
     fontSize: 14,
-    color: 'blue', // Subdued color for the description
-    marginTop: 2,  // Space between title and description
+    color: 'blue',
+    marginTop: 2,
   },
   todoText: {
     fontSize: 16,
@@ -233,12 +272,23 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
   datePickerContainer: {
-    width: '100%', // Full width for the date picker
+    width: '100%',
     marginBottom: 20,
-    alignItems: 'flex-start', // Align to the left of the modal
+    alignItems: 'flex-start',
   },
   datePicker: {
     width: '100%',
+  },
+  deleteButton: {
+    backgroundColor: 'red',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    height: '100%',
+  },
+  deleteButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
   },
 });
 

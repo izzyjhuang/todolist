@@ -5,6 +5,7 @@ import Icon from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { Swipeable } from 'react-native-gesture-handler';
 
+
 const AllTodosScreen = () => {
   const [todos, setTodos] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
@@ -111,9 +112,10 @@ const AllTodosScreen = () => {
   };
 
   const handleEditTodo = (index) => {
+    saveHistory();
     const todo = todos[index];
     setNewTitle(todo.title);
-    setNewDescription(todo.description);
+    setNewDescription(todo.description || '');
     setNewDate(new Date(todo.date));
     setEditingIndex(index);
     setModalVisible(true);

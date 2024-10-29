@@ -89,55 +89,6 @@ const TomorrowScreen = () => {
   const [newDescription, setNewDescription] = useState('');
   const [newDate, setNewDate] = useState(new Date());
 
-  // Load reminders for tomorrow from AsyncStorage
-  useEffect(() => {
-    const loadTomorrowReminders = async () => {
-      const storedTodos = await AsyncStorage.getItem('todos');
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1); // Set date to tomorrow
-      const tomorrowDateString = tomorrow.toISOString().split('T')[0]; // Format: YYYY-MM-DD
-
-      if (storedTodos) {
-        const todos = JSON.parse(storedTodos);
-        const tomorrowReminders = todos.filter(
-          (todo) => new Date(todo.date).toISOString().split('T')[0] === tomorrowDateString
-        );
-        setReminders(tomorrowReminders);
-        setIncompleteRemindersCount(tomorrowReminders.filter(reminder => !reminder.completed).length);
-
-      }
-    };
-
-    loadTomorrowReminders();
-
-    const handleReminderUpdate = () => {
-      loadTomorrowReminders(); // Reload reminders when an update occurs
-    };
-
-    eventEmitter.on('reminderUpdated', handleReminderUpdate);
-
-    // Clean up the listener when the component is unmounted
-    return () => {
-      eventEmitter.off('reminderUpdated', handleReminderUpdate);
-    };
-  }, []);
-
-  const toggleRemindersVisibility = () => {
-    setIsRemindersVisible(!isRemindersVisible);
-  };
-
-  const saveReminders = async (updatedReminders) => {
-    setReminders(updatedReminders);
-    const storedTodos = await AsyncStorage.getItem('todos');
-    if (storedTodos) {
-      const todos = JSON.parse(storedTodos);
-      const otherTodos = todos.filter(
-        (todo) => new Date(todo.date).toISOString().split('T')[0] !== getTomorrowDate()
-      );
-      await AsyncStorage.setItem('todos', JSON.stringify([...otherTodos, ...updatedReminders]));
-    }
-  };
-
   const renderReminderItem = ({ item }) => (
     <Swipeable renderRightActions={() => renderRightActions(item.id)}>
       <TouchableOpacity onPress={() => openEditModal(item)} style={styles.reminderItem}>
@@ -157,20 +108,60 @@ const TomorrowScreen = () => {
     </Swipeable>
   );
 
-  const toggleComplete = (id) => {
-    const updatedReminders = reminders.map(reminder =>
-      reminder.id === id ? { ...reminder, completed: !reminder.completed } : reminder
-    );
-    setReminders(updatedReminders);
-    saveReminders(updatedReminders);
+  const renderRightActions = (id) => (
+    <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteReminder(id)}>
+      <Text style={styles.deleteButtonText}>Delete</Text>
+    </TouchableOpacity>
+  );
 
-    // Update the count of incomplete reminders
-    setIncompleteRemindersCount(updatedReminders.filter(reminder => !reminder.completed).length);
+  // Load reminders for tomorrow from AsyncStorage
+  useEffect(() => {
+    const loadTomorrowReminders = async () => {
+      const storedTodos = await AsyncStorage.getItem('todos');
+      const tomorrowDate = getTomorrowDate();
+      if (storedTodos) {
+        const todos = JSON.parse(storedTodos);
+        const tomorrowReminders = todos.filter(
+          (todo) => new Date(todo.date).toISOString().split('T')[0] === tomorrowDate
+        );
+        setReminders(tomorrowReminders);
+        setIncompleteRemindersCount(tomorrowReminders.filter(reminder => !reminder.completed).length);
+      }
+    };
+  
+    loadTomorrowReminders(); // Initial load
+  
+    const handleReminderUpdate = () => {
+      loadTomorrowReminders(); // Reload reminders when an update occurs
+    };
+  
+    eventEmitter.on('reminderUpdated', handleReminderUpdate);
+  
+    // Clean up the listener when the component is unmounted
+    return () => {
+      eventEmitter.off('reminderUpdated', handleReminderUpdate);
+    };
+  }, []);
+
+  const toggleRemindersVisibility = () => {
+    setIsRemindersVisible(!isRemindersVisible);
   };
 
-  const handleDeleteReminder = (id) => {
-    const updatedReminders = reminders.filter(reminder => reminder.id !== id); // Filter out the reminder
-    saveReminders(updatedReminders); // Save the updated list after deletion
+  const saveReminders = async (updatedReminders) => {
+    setReminders(updatedReminders);
+    
+    // Retrieve all todos from storage
+    const storedTodos = await AsyncStorage.getItem('todos');
+    
+    if (storedTodos) {
+      const todos = JSON.parse(storedTodos);
+      const otherTodos = todos.filter(
+        (todo) => new Date(todo.date).toISOString().split('T')[0] !== getTomorrowDate()
+      );
+      
+      // Update AsyncStorage with tomorrow’s updated reminders and other todos
+      await AsyncStorage.setItem('todos', JSON.stringify([...otherTodos, ...updatedReminders]));
+    }
   };
 
   const openEditModal = (reminder) => {
@@ -181,37 +172,62 @@ const TomorrowScreen = () => {
     setEditModalVisible(true);
 };
 
-  const handleSaveEdit = () => {
-    const updatedReminders = reminders.map(reminder =>
-      reminder.id === editingReminder
-        ? { ...reminder, title: newTitle, description: newDescription, date: newDate }
-        : reminder
-    );
-    
-    saveReminders(updatedReminders); // Save updated reminders
-    filterTomorrowReminders(updatedReminders); // Re-check dates for tomorrow's reminders
-    
-    setEditModalVisible(false);
-    setEditingReminder(null);
-    setNewTitle('');
-    setNewDescription('');
-    setNewDate(new Date());
-  };
-
-  const filterTomorrowReminders = (reminders) => {
-    const tomorrowDate = getTomorrowDate(); // Get tomorrow's date in "YYYY-MM-DD" format
-    const tomorrowReminders = reminders.filter(
-      (reminder) => new Date(reminder.date).toISOString().split('T')[0] === tomorrowDate
-    );
-    setReminders(tomorrowReminders);
-  };
-
-  const renderRightActions = (id) => (
-    <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteReminder(id)}>
-      <Text style={styles.deleteButtonText}>Delete</Text>
-    </TouchableOpacity>
+const handleSaveEdit = async () => {
+  const updatedReminders = reminders.map(reminder =>
+    reminder.id === editingReminder
+      ? { ...reminder, title: newTitle, description: newDescription, date: newDate }
+      : reminder
   );
 
+  // Save updated reminders to AsyncStorage
+  await saveReminders(updatedReminders); 
+  
+  // Filter to show only tomorrow’s reminders
+  filterTomorrowReminders(updatedReminders); 
+  
+  // Emit an event to notify AllTodosScreen of the update
+  eventEmitter.emit('reminderUpdated');
+  
+  // Close the edit modal and reset state
+  setEditModalVisible(false);
+  setEditingReminder(null);
+  setNewTitle('');
+  setNewDescription('');
+  setNewDate(new Date());
+};
+
+const filterTomorrowReminders = (reminders) => {
+  const tomorrowDate = getTomorrowDate(); // Get tomorrow's date in "YYYY-MM-DD" format
+  const tomorrowReminders = reminders.filter(
+    (reminder) => new Date(reminder.date).toISOString().split('T')[0] === tomorrowDate
+  );
+  setReminders(tomorrowReminders);
+};
+
+  const toggleComplete = async (id) => {
+    const updatedReminders = reminders.map(reminder =>
+      reminder.id === id ? { ...reminder, completed: !reminder.completed } : reminder
+    );
+    setReminders(updatedReminders);
+    await saveReminders(updatedReminders);
+  
+    // Update the count of incomplete reminders
+    setIncompleteRemindersCount(updatedReminders.filter(reminder => !reminder.completed).length);
+  
+    eventEmitter.emit('reminderUpdated'); // Emit event for sync
+  };
+
+  const handleDeleteReminder = async (id) => {
+    const updatedReminders = reminders.filter(reminder => reminder.id !== id);
+    await saveReminders(updatedReminders); // Save the updated list after deletion
+    
+    eventEmitter.emit('reminderUpdated'); // Emit event for sync
+  };
+
+
+  
+
+  
   useEffect(() => {
     const loadTomorrowTasks = async () => {
       const storedBlocks = await AsyncStorage.getItem('tomorrowTasks');

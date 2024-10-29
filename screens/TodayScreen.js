@@ -155,15 +155,15 @@ const TodayScreen = () => {
         setIncompleteRemindersCount(todayReminders.filter(reminder => !reminder.completed).length);
       }
     };
-
+  
     loadTodayReminders();
-
+  
     const handleReminderUpdate = () => {
       loadTodayReminders(); // Reload reminders when an update occurs
     };
-
+  
     eventEmitter.on('reminderUpdated', handleReminderUpdate);
-
+  
     // Clean up the listener when the component is unmounted
     return () => {
       eventEmitter.off('reminderUpdated', handleReminderUpdate);
@@ -176,15 +176,21 @@ const TodayScreen = () => {
 
   const saveReminders = async (updatedReminders) => {
     setReminders(updatedReminders);
+    
+    // Retrieve all todos from storage
     const storedTodos = await AsyncStorage.getItem('todos');
+    
     if (storedTodos) {
       const todos = JSON.parse(storedTodos);
       const otherTodos = todos.filter(
         (todo) => new Date(todo.date).toISOString().split('T')[0] !== new Date().toISOString().split('T')[0]
       );
+      
+      // Update AsyncStorage with today’s updated reminders and other todos
       await AsyncStorage.setItem('todos', JSON.stringify([...otherTodos, ...updatedReminders]));
     }
   };
+  
 
   const openEditModal = (reminder) => {
     setEditingReminder(reminder.id);
@@ -194,22 +200,29 @@ const TodayScreen = () => {
     setEditModalVisible(true);
 };
 
-  const handleSaveEdit = () => {
-    const updatedReminders = reminders.map(reminder =>
-      reminder.id === editingReminder
-        ? { ...reminder, title: newTitle, description: newDescription, date: newDate }
-        : reminder
-    );
-    
-    saveReminders(updatedReminders); // Save updated reminders
-    filterTodayReminders(updatedReminders); // Re-check dates for today's reminders
-    
-    setEditModalVisible(false);
-    setEditingReminder(null);
-    setNewTitle('');
-    setNewDescription('');
-    setNewDate(new Date());
-  };
+const handleSaveEdit = async () => {
+  const updatedReminders = reminders.map(reminder =>
+    reminder.id === editingReminder
+      ? { ...reminder, title: newTitle, description: newDescription, date: newDate }
+      : reminder
+  );
+
+  // Save updated reminders to AsyncStorage
+  await saveReminders(updatedReminders); 
+  
+  // Filter to show only today’s reminders
+  filterTodayReminders(updatedReminders); 
+  
+  // Emit an event to notify AllTodosScreen of the update
+  eventEmitter.emit('reminderUpdated');
+  
+  // Close the edit modal and reset state
+  setEditModalVisible(false);
+  setEditingReminder(null);
+  setNewTitle('');
+  setNewDescription('');
+  setNewDate(new Date());
+};
   
   // Helper function to filter and set only today's reminders
   const filterTodayReminders = (reminders) => {
@@ -220,22 +233,25 @@ const TodayScreen = () => {
     setReminders(todayReminders);
   };
 
-  const toggleComplete = (id) => {
+  const toggleComplete = async (id) => {
     const updatedReminders = reminders.map(reminder =>
       reminder.id === id ? { ...reminder, completed: !reminder.completed } : reminder
     );
-
+  
     setReminders(updatedReminders);
-    saveReminders(updatedReminders);
-    
-
-    // Update the count of incomplete reminders
+    await saveReminders(updatedReminders);
     setIncompleteRemindersCount(updatedReminders.filter(reminder => !reminder.completed).length);
+  
+    eventEmitter.emit('reminderUpdated'); // Emit event for sync
   };
+  
 
-  const handleDeleteReminder = (id) => {
+  const handleDeleteReminder = async (id) => {
     const updatedReminders = reminders.filter(reminder => reminder.id !== id);
-    saveReminders(updatedReminders);
+    await saveReminders(updatedReminders);
+    setIncompleteRemindersCount(updatedReminders.filter(reminder => !reminder.completed).length);
+  
+    eventEmitter.emit('reminderUpdated'); // Emit event for sync
   };
 
   // Function to locate the current block based on the time

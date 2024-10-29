@@ -19,32 +19,30 @@ const AllTodosScreen = () => {
   const [future, setFuture] = useState([]);
 
   useEffect(() => {
-  const loadTodos = async () => {
-    const storedTodos = await AsyncStorage.getItem('todos');
-    if (storedTodos) {
-      let parsedTodos = JSON.parse(storedTodos);
-      parsedTodos = parsedTodos.map(todo => ({
-        ...todo,
-        id: todo.id || uuidv4() // Assign a UUID if it doesn't already have one
-      }));
-      const sortedTodos = parsedTodos.sort((a, b) => new Date(a.date) - new Date(b.date));
-      setTodos(sortedTodos);
-    }
-  };
-
-  loadTodos();
-
-  // Listen for updates to refresh the reminders
-  const handleReminderUpdate = () => {
-    loadTodos();
-  };
-
-  eventEmitter.on('reminderUpdated', handleReminderUpdate);
-
-  return () => {
-    eventEmitter.off('reminderUpdated', handleReminderUpdate);
-  };
-}, []);
+    const loadTodos = async () => {
+      const storedTodos = await AsyncStorage.getItem('todos');
+      if (storedTodos) {
+        const parsedTodos = JSON.parse(storedTodos).map(todo => ({
+          ...todo,
+          id: todo.id || uuidv4(), // Assign UUID if missing
+        }));
+        setTodos(parsedTodos.sort((a, b) => new Date(a.date) - new Date(b.date)));
+      }
+    };
+  
+    loadTodos(); // Initial load
+  
+    // Listen for the reminderUpdated event to refresh the todos
+    const handleReminderUpdate = () => {
+      loadTodos(); // Reload todos from storage when an update occurs
+    };
+  
+    eventEmitter.on('reminderUpdated', handleReminderUpdate);
+  
+    return () => {
+      eventEmitter.off('reminderUpdated', handleReminderUpdate);
+    };
+  }, []);
 
   const saveTodos = async (updatedTodos) => {
     const sortedTodos = updatedTodos.sort((a, b) => new Date(a.date) - new Date(b.date));
@@ -101,18 +99,18 @@ const AllTodosScreen = () => {
     setNewDate(new Date()); // Reset the date input to today’s date
   };
   
-  const toggleComplete = (id) => {
-    // Save history for undo functionality
-    saveHistory();
+  const toggleComplete = async (id) => {
+    saveHistory(); // Save history for undo functionality
   
-    // Toggle the completion status without triggering eventEmitter
     const updatedTodos = todos.map(todo =>
       todo.id === id ? { ...todo, completed: !todo.completed } : todo
     );
   
-    // Save the updated todos without emitting an event
-    saveTodos(updatedTodos);
+    await saveTodos(updatedTodos); // Save updated todos to AsyncStorage
+    
+    eventEmitter.emit('reminderUpdated'); // Emit event for sync with TodayScreen
   };
+
   const categorizeTodos = () => {
     const now = new Date();
     const todayDate = now.toDateString();
@@ -152,12 +150,15 @@ const AllTodosScreen = () => {
     setModalVisible(true); // Show the modal for editing
   };
 
-  const handleDeleteTodo = (id) => {
-    saveHistory(); // Save the current state for undo functionality
-    const updatedTodos = todos.filter(todo => todo.id !== id); // Filter out the todo with the specified id
-    saveTodos(updatedTodos); // Save the updated list of todos
-    eventEmitter.emit('reminderUpdated'); // Emit an event for update
-  };
+  const handleDeleteTodo = async (id) => {
+  saveHistory(); // Save history for undo functionality
+
+  const updatedTodos = todos.filter(todo => todo.id !== id);
+
+  await saveTodos(updatedTodos); // Save updated todos to AsyncStorage
+  
+  eventEmitter.emit('reminderUpdated'); // Emit event for sync with TodayScreen
+};
 
   const renderRightActions = (id) => (
     <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteTodo(id)}>

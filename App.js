@@ -72,7 +72,7 @@ export default function App() {
 
     const checkTime = () => {
       const now = new Date();
-      if (now.getHours() === 0 && now.getMinutes() === 0) {
+      if (now.getHours() === 0 && now.getMinutes() === 2) {
         loadRoutineForTomorrow();
       }
     };

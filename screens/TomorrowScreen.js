@@ -74,8 +74,8 @@ const TomorrowScreen = () => {
   const [dayEnd, setDayEnd] = useState('23:00');
   const [blocks, setBlocks] = useState(generateTimeBlocks());
   const [selectedBlocks, setSelectedBlocks] = useState([]);
-  const [modalVisible, setModalVisible] = useState(false);
-  const [settingsVisible, setSettingsVisible] = useState(false);
+  const [editModalVisible, setEditModalVisible] = useState(false);
+  const [addTaskModalVisible, setAddTaskModalVisible] = useState(false);    const [settingsVisible, setSettingsVisible] = useState(false);
   const [isSelecting, setIsSelecting] = useState(false);
   const [entryBlock, setEntryBlock] = useState(null);
   const [history, setHistory] = useState([]);
@@ -178,8 +178,8 @@ const TomorrowScreen = () => {
     setNewTitle(reminder.title);
     setNewDescription(reminder.description || '');
     setNewDate(new Date(reminder.date));
-    setModalVisible(true);
-  };
+    setEditModalVisible(true);
+};
 
   const handleSaveEdit = () => {
     const updatedReminders = reminders.map(reminder =>
@@ -191,7 +191,7 @@ const TomorrowScreen = () => {
     saveReminders(updatedReminders); // Save updated reminders
     filterTomorrowReminders(updatedReminders); // Re-check dates for tomorrow's reminders
     
-    setModalVisible(false);
+    setEditModalVisible(false);
     setEditingReminder(null);
     setNewTitle('');
     setNewDescription('');
@@ -266,8 +266,8 @@ const TomorrowScreen = () => {
 
   const handleBlockPressEntryMode = (block) => {
     setEntryBlock(block);
-    setModalVisible(true);
-  };
+    setAddTaskModalVisible(true);
+};
 
   const handleBlockPressSelectMode = (block) => {
     if (selectedBlocks.length === 0) {
@@ -354,7 +354,7 @@ const TomorrowScreen = () => {
     setBlocks(updatedBlocks);
     setSelectedBlocks([]);
     setEntryBlock(null);
-    setModalVisible(false);
+    setEditModalVisible(false);
   };
 
   const handleMerge = () => {
@@ -469,7 +469,7 @@ const TomorrowScreen = () => {
         )}
 
       {/* Edit Modal */}
-      <Modal visible={modalVisible} animationType="slide" transparent={true}>
+      <Modal visible={editModalVisible} animationType="slide" transparent={true}>
         <View style={styles.modalContainer}>
           <View style={styles.modalContent}>
             <Text style={styles.modalTitle}>Edit Reminder</Text>
@@ -495,7 +495,7 @@ const TomorrowScreen = () => {
               />
             </View>
             <Button title="Save Changes" onPress={handleSaveEdit} />
-            <Button title="Close" onPress={() => setModalVisible(false)} />
+            <Button title="Close" onPress={() => setEditModalVisible(false)} />
           </View>
         </View>
       </Modal>
@@ -535,9 +535,9 @@ const TomorrowScreen = () => {
       )}
 
       <AddTodoModal
-        visible={modalVisible}
+        visible={addTaskModalVisible}
         onClose={() => {
-          setModalVisible(false);
+          setAddTaskModalVisible(false);
           setSelectedBlocks([]);
           setEntryBlock(null);
         }}

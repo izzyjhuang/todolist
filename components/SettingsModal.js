@@ -11,16 +11,12 @@ const timeZoneList = [
   { label: "Eastern Time (UTC-4)", value: "EST" },
 ];
 
-// const defaultPriorities = {
-//   p1: { label: 'p1', color: '#D6B4FC' },
-//   p2: { label: 'p2', color: '#FF8184' },
-//   p3: { label: 'p3', color: '#FDAA48' },
-//   p4: { label: 'p4', color: '#FFFFC5' }
-// };
-
 // Time options for Day Starts and Day Ends
-const dayStartOptions = ['5:00', '6:00', '7:00', '8:00'];
-const dayEndOptions = ['21:00', '22:00', '23:00', '0:00'];
+// const dayStartOptions = ['5:00', '6:00', '7:00', '8:00'];
+// const dayEndOptions = ['21:00', '22:00', '23:00', '0:00'];
+const dayStartHourOptions = ['05', '06', '07', '08'];
+const dayEndHourOptions = ['21', '22', '23', '00'];
+const minuteOptions = ['00', '15', '30', '45'];
 
 const SettingsModal = ({
   visible,
@@ -39,8 +35,15 @@ const SettingsModal = ({
     const [intervalVisible, setIntervalVisible] = useState(false); // Track schedule interval dropdown
     const [timeZoneVisible, setTimeZoneVisible] = useState(false); // Track time zone dropdown
     const [selectedTimeZone, setSelectedTimeZone] = useState('PST'); // Default to Pacific Time
-    const [dayStartVisible, setDayStartVisible] = useState(false); // Track day starts dropdown visibility
-    const [dayEndVisible, setDayEndVisible] = useState(false); // Track day ends dropdown visibility
+    const [dayStartHourVisible, setDayStartHourVisible] = useState(false); // Visibility for start hour
+    const [dayStartMinuteVisible, setDayStartMinuteVisible] = useState(false); // Visibility for start minute
+    const [dayEndHourVisible, setDayEndHourVisible] = useState(false); // Visibility for end hour
+    const [dayEndMinuteVisible, setDayEndMinuteVisible] = useState(false); // Visibility for end minute
+    const [dayStartHour, setDayStartHour] = useState('5');
+    const [dayStartMinute, setDayStartMinute] = useState('00');
+    const [dayEndHour, setDayEndHour] = useState('21');
+    const [dayEndMinute, setDayEndMinute] = useState('00');
+
     // const [selectedDayStart, setSelectedDayStart] = useState(selectedDayStart || '6:00');
     // const [selectedDayEnd, setSelectedDayEnd] = useState(selectedDayEnd || '23:00');
   
@@ -134,13 +137,13 @@ const SettingsModal = ({
   const renderDayStartOptions = () => {
     return (
       <View style={styles.timeZonePalette}>
-        {dayStartOptions.map((start) => (
+        {dayStartHourOptions.map((start) => (
           <TouchableOpacity
             key={start}
             style={styles.timeZoneOption}
             onPress={() => {
               setSelectedDayStart(start);
-              setDayStartVisible(false);
+              setDayStartHourVisible(false);
             }}
           >
             <Text style={styles.intervalText}>{start}</Text>
@@ -154,13 +157,13 @@ const SettingsModal = ({
   const renderDayEndOptions = () => {
     return (
       <View style={styles.timeZonePalette}>
-        {dayEndOptions.map((end) => (
+        {dayEndHourOptions.map((end) => (
           <TouchableOpacity
             key={end}
             style={styles.timeZoneOption}
             onPress={() => {
               setSelectedDayEnd(end);
-              setDayEndVisible(false);
+              setDayEndHourVisible(false);
             }}
           >
             <Text style={styles.intervalText}>{end}</Text>
@@ -191,6 +194,60 @@ const SettingsModal = ({
       </View>
     );
   };
+
+   // Render Start Hour and Minute Options
+   const renderStartHourOptions = (setHour) => (
+    <View style={styles.timeZonePalette}>
+      {dayStartHourOptions.map((hour) => (
+        <TouchableOpacity
+          key={hour}
+          style={styles.timeZoneOption}
+          onPress={() => {
+            setHour(hour);
+            setDayStartHourVisible(false);
+          }}
+        >
+          <Text style={styles.intervalText}>{hour}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
+  // Render Hour and Minute Options
+  const renderEndHourOptions = (setHour) => (
+    <View style={styles.timeZonePalette}>
+      {dayEndHourOptions.map((hour) => (
+        <TouchableOpacity
+          key={hour}
+          style={styles.timeZoneOption}
+          onPress={() => {
+            setHour(hour);
+            setDayEndHourVisible(false);
+          }}
+        >
+          <Text style={styles.intervalText}>{hour}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
+
+  const renderMinuteOptions = (setMinute) => (
+    <View style={styles.timeZonePalette}>
+      {minuteOptions.map((minute) => (
+        <TouchableOpacity
+          key={minute}
+          style={styles.timeZoneOption}
+          onPress={() => {
+            setMinute(minute);
+            setDayStartMinuteVisible(false);
+            setDayEndMinuteVisible(false);
+          }}
+        >
+          <Text style={styles.intervalText}>{minute}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  );
 
   // Time Zone Selector (similar to schedule interval)
   const renderTimeZoneOptions = () => {
@@ -239,30 +296,51 @@ const SettingsModal = ({
             <Text style={styles.intervalButtonText}>{`${timeInterval} mins`}</Text>
           </TouchableOpacity>
           {intervalVisible && renderIntervalOptions()}
-
+          <View style={styles.dayTimeMotherContainer}>
           {/* Day Starts and Day Ends Side by Side */}
           <View style={styles.dayTimeContainer}>
-            <View style={styles.dayTimeBlock}>
-              <Text style={styles.subHeader}>Day Starts:</Text>
-              <TouchableOpacity
-                style={styles.intervalButton}
-                onPress={() => setDayStartVisible((prev) => !prev)}
-              >
-                <Text style={styles.intervalButtonText}>{selectedDayStart}</Text>
-              </TouchableOpacity>
-              {dayStartVisible && renderDayStartOptions()}
-            </View>
+          {/* Day Start Time Selector */}
+          <Text style={styles.subHeader}>Day Starts:</Text>
+          <View style={styles.timeSelectContainer}>
+            <TouchableOpacity
+              style={styles.timeSelectButton}
+              onPress={() => setDayStartHourVisible((prev) => !prev)}
+            >
+              <Text style={styles.timeSelectText}>{dayStartHour}</Text>
+            </TouchableOpacity>
+            {dayStartHourVisible && renderStartHourOptions(setDayStartHour)}
+            <Text style={styles.subHeader}>:</Text>
+            <TouchableOpacity
+              style={styles.timeSelectButton}
+              onPress={() => setDayStartMinuteVisible((prev) => !prev)}
+            >
+              <Text style={styles.timeSelectText}>{dayStartMinute}</Text>
+            </TouchableOpacity>
+            {dayStartMinuteVisible && renderMinuteOptions(setDayStartMinute)}
+          </View>
+          </View>
 
-            <View style={styles.dayTimeBlock}>
-              <Text style={styles.subHeader}>Day Ends:</Text>
-              <TouchableOpacity
-                style={styles.intervalButton}
-                onPress={() => setDayEndVisible((prev) => !prev)}
-              >
-                <Text style={styles.intervalButtonText}>{selectedDayEnd}</Text>
-              </TouchableOpacity>
-              {dayEndVisible && renderDayEndOptions()}
-            </View>
+          <View style={styles.dayTimeContainer}>
+          {/* Day End Time Selector */}
+          <Text style={styles.subHeader}>Day Ends:</Text>
+          <View style={styles.timeSelectContainer}>
+            <TouchableOpacity
+              style={styles.timeSelectButton}
+              onPress={() => setDayEndHourVisible((prev) => !prev)}
+            >
+              <Text style={styles.timeSelectText}>{dayEndHour}</Text>
+            </TouchableOpacity>
+            {dayEndHourVisible && renderEndHourOptions(setDayEndHour)}
+            <Text style={styles.subHeader}>:</Text>
+            <TouchableOpacity
+              style={styles.timeSelectButton}
+              onPress={() => setDayEndMinuteVisible((prev) => !prev)}
+            >
+              <Text style={styles.timeSelectText}>{dayEndMinute}</Text>
+            </TouchableOpacity>
+            {dayEndMinuteVisible && renderMinuteOptions(setDayEndMinute)}
+          </View>
+          </View>
           </View>
 
           <Text style={styles.subHeader}>Priority Labels:</Text>
@@ -345,8 +423,13 @@ const styles = StyleSheet.create({
       fontSize: 16,
       color: 'black',
     },
-    dayTimeContainer: {
+    dayTimeMotherContainer: {
       flexDirection: 'row',
+      justifyContent: 'space-between',
+      width: 250,
+    },
+    dayTimeContainer: {
+      flexDirection: 'column',
       justifyContent: 'space-between',
     },
     dayTimeBlock: {
@@ -404,6 +487,12 @@ const styles = StyleSheet.create({
       borderRadius: 15,
       marginHorizontal: 5,
     },
+
+    timeSelectContainer: { flexDirection: 'row', alignItems: 'center' },
+    timeSelectButton: { backgroundColor: '#f0f0f0', padding: 10, borderRadius: 8, marginHorizontal: 5 },
+    timeSelectText: { fontSize: 16, color: 'black' },
+    timePicker: { flexDirection: 'row', justifyContent: 'space-between' },
+    buttonRow: { marginTop: 20 },
   });
 
 export default SettingsModal;

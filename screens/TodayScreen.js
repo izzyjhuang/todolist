@@ -220,22 +220,25 @@ const TodayScreen = () => {
     setReminders(todayReminders);
   };
 
-  const toggleComplete = (id) => {
+  const toggleComplete = async (id) => {
     const updatedReminders = reminders.map(reminder =>
       reminder.id === id ? { ...reminder, completed: !reminder.completed } : reminder
     );
-
+  
     setReminders(updatedReminders);
-    saveReminders(updatedReminders);
-    
-
-    // Update the count of incomplete reminders
+    await saveReminders(updatedReminders);
     setIncompleteRemindersCount(updatedReminders.filter(reminder => !reminder.completed).length);
+  
+    eventEmitter.emit('reminderUpdated'); // Emit event for sync
   };
+  
 
-  const handleDeleteReminder = (id) => {
+  const handleDeleteReminder = async (id) => {
     const updatedReminders = reminders.filter(reminder => reminder.id !== id);
-    saveReminders(updatedReminders);
+    await saveReminders(updatedReminders);
+    setIncompleteRemindersCount(updatedReminders.filter(reminder => !reminder.completed).length);
+  
+    eventEmitter.emit('reminderUpdated'); // Emit event for sync
   };
 
   // Function to locate the current block based on the time

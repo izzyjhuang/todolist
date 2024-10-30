@@ -1,6 +1,8 @@
 // TodayScreen.js
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
+
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Button, Modal, TextInput } from 'react-native';
 import { usePriorities } from '../components/PrioritiesContext';
 
@@ -92,7 +94,7 @@ const generateTimeBlocks = (interval = 15, dayStart = '6:00', dayEnd = '23:00') 
   return blocks;
 };
 
-const TodayScreen = () => {
+const TodayScreen = ({ taskUpdated }) => {
   const { customPriorities, setCustomPriorities } = usePriorities();
   const [dayStart, setDayStart] = useState('6:00');
   const [dayEnd, setDayEnd] = useState('23:00');
@@ -133,6 +135,20 @@ const TodayScreen = () => {
   
     let updatedBlocks = [...blocks];
   
+    const moveTasksToToday = useCallback(async () => {
+      const tomorrowTasks = await AsyncStorage.getItem('tomorrowTasks');
+      if (tomorrowTasks) {
+        await AsyncStorage.setItem('todayTasks', tomorrowTasks);
+        await AsyncStorage.removeItem('tomorrowTasks');
+      }
+    }, []);
+  
+    useFocusEffect(
+      useCallback(() => {
+        moveTasksToToday();
+      }, [moveTasksToToday])
+    );
+
     // Add blocks at the beginning if newDayStart is earlier than the current start
     if (newStartTotalMinutes < currentStartTotalMinutes) {
       let currentMinutes = newStartTotalMinutes;
@@ -357,15 +373,16 @@ const handleSaveEdit = async () => {
     return () => clearInterval(intervalId);  // Cleanup interval on unmount
   }, [blocks]);  // Re-run when blocks are updated (split/merge)
 
-  useEffect(() => {
-    const loadTodayTasks = async () => {
-      const storedBlocks = await AsyncStorage.getItem('todayTasks');
-      if (storedBlocks) {
-        setBlocks(JSON.parse(storedBlocks));
-      }
-    };
-    loadTodayTasks();
+  const loadTodayTasks = useCallback(async () => {
+    const storedBlocks = await AsyncStorage.getItem('todayTasks');
+    if (storedBlocks) {
+      setBlocks(JSON.parse(storedBlocks));
+    }
   }, []);
+
+  useEffect(() => {
+    loadTodayTasks(); // Load tasks on initial render and when taskUpdated changes
+  }, [taskUpdated, loadTodayTasks]);
 
   useEffect(() => {
     // Save blocks to AsyncStorage when updated

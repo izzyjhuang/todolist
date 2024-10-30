@@ -1,6 +1,7 @@
 // TomorrowScreen.js
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useFocusEffect } from '@react-navigation/native';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Button, Modal, TextInput } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
@@ -66,7 +67,7 @@ const generateTimeBlocks = (interval = 15, dayStart = '6:00', dayEnd = '23:00') 
   return blocks;
 };
 
-const TomorrowScreen = () => {
+const TomorrowScreen = ({ taskUpdated }) => {
   const { customPriorities, setCustomPriorities } = usePriorities();
   const [dayStart, setDayStart] = useState('6:00');
   const [dayEnd, setDayEnd] = useState('23:00');
@@ -103,6 +104,23 @@ const TomorrowScreen = () => {
                                       + parseInt(blocks[blocks.length - 1].time.split('-')[1].split(':')[1]);
   
     let updatedBlocks = [...blocks];
+
+    const loadRoutineForTomorrow = useCallback(async () => {
+      const nextDay = new Date();
+      nextDay.setDate(nextDay.getDate() + 1);
+      const weekday = nextDay.toLocaleDateString('en-US', { weekday: 'long' });
+  
+      const routine = await AsyncStorage.getItem(`routine${weekday}`);
+      if (routine) {
+        await AsyncStorage.setItem('tomorrowTasks', routine);
+      }
+    }, []);
+  
+    useFocusEffect(
+      useCallback(() => {
+        loadRoutineForTomorrow();
+      }, [loadRoutineForTomorrow])
+    );
   
     // Add blocks at the beginning if newDayStart is earlier than the current start
     if (newStartTotalMinutes < currentStartTotalMinutes) {
@@ -303,15 +321,16 @@ const filterTomorrowReminders = (reminders) => {
     eventEmitter.emit('reminderUpdated'); // Emit event for sync
   };
   
-  useEffect(() => {
-    const loadTomorrowTasks = async () => {
-      const storedBlocks = await AsyncStorage.getItem('tomorrowTasks');
-      if (storedBlocks) {
-        setBlocks(JSON.parse(storedBlocks));
-      }
-    };
-    loadTomorrowTasks();
+  const loadTomorrowTasks = useCallback(async () => {
+    const storedBlocks = await AsyncStorage.getItem('tomorrowTasks');
+    if (storedBlocks) {
+      setBlocks(JSON.parse(storedBlocks));
+    }
   }, []);
+
+  useEffect(() => {
+    loadTomorrowTasks(); // Load tasks initially and whenever taskUpdated changes
+  }, [taskUpdated, loadTomorrowTasks]);
 
   useEffect(() => {
     // Save blocks to AsyncStorage when updated

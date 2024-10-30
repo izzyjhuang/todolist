@@ -25,7 +25,7 @@ const getFormattedDate = () => {
   const tomorrow = new Date(today);
   tomorrow.setDate(today.getDate() + 1);
   return new Intl.DateTimeFormat('en-US', {
-    weekday: 'long',
+    weekday: 'short',
     month: 'short',
     day: 'numeric',
   }).format(tomorrow); // Outputs in the format: Wed, Oct 23

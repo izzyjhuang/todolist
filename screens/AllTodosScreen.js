@@ -55,21 +55,60 @@ const AllTodosScreen = () => {
     setFuture([]);
   };
 
-  const handleUndo = () => {
+  const saveTodosToStorage = async (key, data) => {
+    await AsyncStorage.setItem(key, JSON.stringify(data));
+  };
+  
+  const loadFromStorage = async (key) => {
+    const storedData = await AsyncStorage.getItem(key);
+    return storedData ? JSON.parse(storedData) : [];
+  };
+  
+  useEffect(() => {
+    const initializeHistoryAndFuture = async () => {
+      const savedHistory = await loadFromStorage('history');
+      const savedFuture = await loadFromStorage('future');
+      setHistory(savedHistory);
+      setFuture(savedFuture);
+    };
+    initializeHistoryAndFuture();
+  }, []);
+  
+  const handleUndo = async () => {
     if (history.length > 0) {
-      setFuture([todos, ...future]);
       const previousState = history[history.length - 1];
-      setHistory(history.slice(0, -1));
+      const newHistory = history.slice(0, -1);
+      
       setTodos(previousState);
+      setHistory(newHistory);
+      setFuture([todos, ...future]);
+  
+      // Save the updated history and future to AsyncStorage
+      await saveTodos(previousState);
+      await saveTodosToStorage('history', newHistory);
+      await saveTodosToStorage('future', [todos, ...future]);
+  
+      // Trigger an update for TodayScreen
+      eventEmitter.emit('reminderUpdated');
     }
   };
-
-  const handleRedo = () => {
+  
+  const handleRedo = async () => {
     if (future.length > 0) {
-      setHistory([...history, todos]);
       const nextState = future[0];
-      setFuture(future.slice(1));
+      const newFuture = future.slice(1);
+      
       setTodos(nextState);
+      setHistory([...history, todos]);
+      setFuture(newFuture);
+  
+      // Save the updated history and future to AsyncStorage
+      await saveTodos(nextState);
+      await saveTodosToStorage('history', [...history, todos]);
+      await saveTodosToStorage('future', newFuture);
+  
+      // Trigger an update for TodayScreen
+      eventEmitter.emit('reminderUpdated');
     }
   };
 

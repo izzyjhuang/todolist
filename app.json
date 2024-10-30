@@ -13,16 +13,30 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.izzyjhuang.TodoListApp"
+      "bundleIdentifier": "com.izzyjhuang.TodoListApp",
+      "runtimeVersion": "1.0.0"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "runtimeVersion": "1.0.0"
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "31893f27-6061-4e45-a7f9-5e6b8b11bd86"
+      }
+    },
+    "updates": {
+      "url": "https://u.expo.dev/31893f27-6061-4e45-a7f9-5e6b8b11bd86",
+      "enabled": true,
+      "checkAutomatically": "ON_LOAD",
+      "fallbackToCacheTimeout": 0
+    },
+    "runtimeVersion": "1.0.0"
   }
 }

@@ -50,7 +50,7 @@ const calculateTimeFraction = (blockTime, currentTime) => {
 const getFormattedDate = () => {
     const today = new Date();
     return new Intl.DateTimeFormat('en-US', {
-      weekday: 'long',
+      weekday: 'short',
       month: 'short',
       day: 'numeric',
     }).format(today); // Outputs in the format: Wed, Oct 23

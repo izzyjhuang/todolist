@@ -1,6 +1,6 @@
 // App.js
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { PrioritiesProvider } from './components/PrioritiesContext';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { NavigationContainer } from '@react-navigation/native';
@@ -54,12 +54,12 @@ export default function App() {
 
     const checkTime = () => {
       const now = new Date();
-      if (now.getHours() === 0 && now.getMinutes() === 36) {
+      if (now.getHours() === 0 && now.getMinutes() === 44) {
         moveTasksToToday();
       }
     };
 
-    const interval = setInterval(checkTime, 60000); // Check every 60 seconds
+    const interval = setInterval(checkTime, 6000); // Check every 60 seconds
     return () => clearInterval(interval); // Cleanup the interval on unmount
   }, []);
 
@@ -76,18 +76,18 @@ export default function App() {
       const routine = await AsyncStorage.getItem(`routine${weekday}`);
       if (routine) {
         await AsyncStorage.setItem('tomorrowTasks', routine);
-        const interval = setInterval(checkTime, 60000); // Check every 60 seconds
+        const interval = setInterval(checkTime, 6000); // Check every 60 seconds
       }
     };
   
     const checkTime = () => {
       const now = new Date();
-      if (now.getHours() === 0 && now.getMinutes() === 38) {
+      if (now.getHours() === 0 && now.getMinutes() === 45) {
         loadRoutineForTomorrow();
       }
     };
   
-    const interval = setInterval(checkTime, 60000); // Check every 60 seconds
+    const interval = setInterval(checkTime, 6000); // Check every 60 seconds
     return () => clearInterval(interval);
   }, []);
 

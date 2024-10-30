@@ -2,7 +2,6 @@
 
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Button, Modal} from 'react-native';
-import { Picker } from '@react-native-picker/picker';
 import { usePriorities } from '../components/PrioritiesContext';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -46,6 +45,7 @@ const generateTimeBlocks = (interval = 15, dayStart = '6:00', dayEnd = '23:00') 
 const RoutineScreen = () => {
   const { customPriorities, setCustomPriorities } = usePriorities();
   const [selectedDay, setSelectedDay] = useState('Monday');
+  const [isDayPaletteVisible, setIsDayPaletteVisible] = useState(false); // Toggle day palette visibility
   const [dayStart, setDayStart] = useState('6:00');
   const [dayEnd, setDayEnd] = useState('23:00');
   const [blocks, setBlocks] = useState(generateTimeBlocks());
@@ -264,24 +264,46 @@ const RoutineScreen = () => {
     return customPriorities[priority]?.color || 'transparent';
   };
 
+  const handleDaySelect = (day) => {
+    setSelectedDay(day);
+    setIsDayPaletteVisible(false);
+  };
+
+  const renderDaySelector = () => (
+    <View style={styles.daySelectorContainer}>
+      <View style={styles.selectorRow}>
+        <Text style={styles.selectorText}>Routines for</Text>
+        <TouchableOpacity onPress={() => setIsDayPaletteVisible(!isDayPaletteVisible)} style={styles.selectedDay}>
+          <Text style={styles.selectedDayText}>{selectedDay}</Text>
+        </TouchableOpacity>
+      </View>
+      {isDayPaletteVisible && (
+        <View style={styles.dayPalette}>
+          {dayOptions.map(day => (
+            day !== selectedDay && (
+              <TouchableOpacity key={day} onPress={() => handleDaySelect(day)} style={styles.dayOption}>
+                <Text style={styles.dayText}>{day}</Text>
+              </TouchableOpacity>
+            )
+          ))}
+        </View>
+      )}
+    </View>
+  );
+
   const renderBlock = ({ item }) => (
     <TouchableOpacity
       style={[
         styles.block,
         { backgroundColor: getPriorityColor(item.priority) },
-        selectedBlocks.find(block => block.id === item.id) ? styles.selectedBlock : null
       ]}
-      onPress={() =>
-        isSelecting ? handleBlockPressSelectMode(item) : handleBlockPressEntryMode(item)
-      }
+      onPress={() => handleBlockPressEntryMode(item)}
     >
       <Text style={styles.timeText}>{item.time}</Text>
       {item.title ? (
         <View>
           <Text style={styles.title}>{item.title}</Text>
-          {item.description ? (
-            <Text style={styles.description}>{item.description}</Text>
-          ) : null}
+          {item.description && <Text style={styles.description}>{item.description}</Text>}
         </View>
       ) : (
         <Text style={styles.emptyText}>Empty</Text>
@@ -321,7 +343,8 @@ const RoutineScreen = () => {
         <Button title={isSelecting ? "Cancel Select" : "Select"} onPress={toggleSelectMode} />
       </View>
 
-      {renderDayOptions()}
+      {/* Day Selector */}
+      {renderDaySelector()}
 
       <SettingsModal
         visible={settingsVisible}
@@ -396,7 +419,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 5,
     marginLeft: 15,
     marginRight: 15,
   },
@@ -404,16 +427,60 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
   },
+  daySelectorContainer: {
+    alignItems: 'center',
+  },
+  selectorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  selectorText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333',
+    marginRight: 5, // Adds spacing between "Routines for" and day selector
+  },
+  selectedDay: {
+    backgroundColor: '#1E8AFF',
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+  },
+  selectedDayText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  dayPalette: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    padding: 10,
+    // backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+  },
+  dayOption: {
+    backgroundColor: '#e0e0e0',
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    margin: 5,
+  },
+  dayText: {
+    color: '#333',
+    fontSize: 16,
+  },
   block: {
     padding: 15,
     borderBottomWidth: 1,
     borderColor: '#eee',
     minHeight: 60,
-    borderRadius: 10,
-  },
-  selectedBlock: {
-    borderColor: '#00f',
-    borderWidth: 2,
     borderRadius: 10,
   },
   timeText: {
@@ -470,10 +537,6 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     margin: 5,
   },
-  selectedDay: {
-    backgroundColor: '#1E8AFF',
-    fontWeight: 'bold',
-  },
   intervalText: {
     fontSize: 16,
     color: 'black',
@@ -481,11 +544,6 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     color: '#aaa',
-  },
-  selectionOptions: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginTop: 10,
   },
 });
 

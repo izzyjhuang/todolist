@@ -24,6 +24,7 @@ import AllTodosScreen from './screens/AllTodosScreen';
 const Tab = createBottomTabNavigator();
 
 export default function App() {
+  const [taskUpdated, setTaskUpdated] = useState(false); // State variable to trigger rerender
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(today.getDate() + 1);
@@ -47,18 +48,18 @@ export default function App() {
       if (tomorrowTasks) {
         await AsyncStorage.setItem('todayTasks', tomorrowTasks); // Move tasks
         await AsyncStorage.removeItem('tomorrowTasks'); // Clear tomorrow's tasks
+        setTaskUpdated((prev) => !prev); // Toggle to force rerender
       }
     };
 
     const checkTime = () => {
       const now = new Date();
-      if (now.getHours() === 0 && now.getMinutes() === 26) {
+      if (now.getHours() === 0 && now.getMinutes() === 36) {
         moveTasksToToday();
       }
     };
 
     const interval = setInterval(checkTime, 60000); // Check every 60 seconds
-
     return () => clearInterval(interval); // Cleanup the interval on unmount
   }, []);
 
@@ -75,12 +76,13 @@ export default function App() {
       const routine = await AsyncStorage.getItem(`routine${weekday}`);
       if (routine) {
         await AsyncStorage.setItem('tomorrowTasks', routine);
+        const interval = setInterval(checkTime, 60000); // Check every 60 seconds
       }
     };
   
     const checkTime = () => {
       const now = new Date();
-      if (now.getHours() === 0 && now.getMinutes() === 28) {
+      if (now.getHours() === 0 && now.getMinutes() === 38) {
         loadRoutineForTomorrow();
       }
     };

@@ -17,6 +17,8 @@ const AllTodosScreen = () => {
   const [editingIndex, setEditingIndex] = useState(null);
   const [history, setHistory] = useState([]);
   const [future, setFuture] = useState([]);
+  const [showArchived, setShowArchived] = useState(false); // State for archived section visibility
+
 
   useEffect(() => {
     const loadTodos = async () => {
@@ -157,27 +159,54 @@ const AllTodosScreen = () => {
     endOfWeek.setDate(now.getDate() + 7);
 
     const sections = [
-      { title: 'Past Due', data: [] },
-      { title: 'Today', data: [] },
-      { title: 'This Week', data: [] },
-      { title: 'Scheduled', data: [] },
-    ];
+        { title: 'Archived ', data: [], collapsible: true }, // Add Archived section
+        { title: 'Past Due', data: [] },
+        { title: 'Today', data: [] },
+        { title: 'This Week', data: [] },
+        { title: 'Scheduled', data: [] },
+      ];
+  
 
-    todos.forEach(todo => {
-      const todoDate = new Date(todo.date);
-      if (todoDate < now && todoDate.toDateString() !== todayDate) {
-        sections[0].data.push(todo);
-      } else if (todoDate.toDateString() === todayDate) {
-        sections[1].data.push(todo);
-      } else if (todoDate > now && todoDate <= endOfWeek) {
-        sections[2].data.push(todo);
-      } else if (todoDate > endOfWeek) {
-        sections[3].data.push(todo);
-      }
-    });
+      todos.forEach(todo => {
+        const todoDate = new Date(todo.date);
+        if (todo.completed && todoDate < now) {
+          sections[0].data.push(todo); // Add to Archived if completed and past due
+        } else if (todoDate < now && todoDate.toDateString() !== todayDate) {
+          sections[1].data.push(todo);
+        } else if (todoDate.toDateString() === todayDate) {
+          sections[2].data.push(todo);
+        } else if (todoDate > now && todoDate <= endOfWeek) {
+          sections[3].data.push(todo);
+        } else if (todoDate > endOfWeek) {
+          sections[4].data.push(todo);
+        }
+      });
 
-    return sections.filter(section => section.data.length > 0);
+      return sections
+      .filter(section => section.data.length > 0) // Only include non-empty sections
+      .map(section => ({
+        ...section,
+        data: section.title === 'Archived ' && !showArchived ? [] : section.data, // Hide archived if toggled off
+      }));
   };
+
+  const toggleArchivedVisibility = () => {
+    setShowArchived(!showArchived);
+  };
+
+  const renderSectionHeader = ({ section: { title, collapsible } }) => (
+    <TouchableOpacity onPress={collapsible ? toggleArchivedVisibility : null} style={styles.sectionHeaderContainer}>
+      <Text style={styles.sectionHeader}>{title}</Text>
+      {collapsible && (
+        <Icon
+          name={showArchived ? "keyboard-arrow-up" : "keyboard-arrow-down"} // Use down arrow when collapsed, up arrow when expanded
+          size={24}
+          color="#1E8AFF"
+          style={styles.collapseIcon} // Adjust styles to ensure close alignment
+        />
+      )}
+    </TouchableOpacity>
+  );
 
   const handleEditTodo = (id) => {
     saveHistory(); // Save the current state for undo functionality
@@ -235,12 +264,10 @@ const AllTodosScreen = () => {
       <SectionList
         sections={categorizeTodos()}
         renderItem={renderTodo}
-        renderSectionHeader={({ section: { title } }) => (
-            <Text style={styles.sectionHeader}>{title}</Text>
-        )}
-        keyExtractor={(item) => item.id} // Use id as the key
+        renderSectionHeader={renderSectionHeader}
+        keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
-        />
+      />
 
       <TouchableOpacity style={styles.addButton} onPress={() => setModalVisible(true)}>
         <Icon name="add" size={30} color="white" />
@@ -298,6 +325,20 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     marginBottom: 10,
+  },
+  sectionHeaderContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  sectionHeader: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#1E8AFF',
+  },
+  collapseIcon: {
+    fontSize: 18,
+    color: '#1E8AFF',
   },
   headerText: {
     fontSize: 30,

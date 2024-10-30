@@ -52,7 +52,7 @@ export default function App() {
 
     const checkTime = () => {
       const now = new Date();
-      if (now.getHours() === 0 && now.getMinutes() === 4) {
+      if (now.getHours() === 0 && now.getMinutes() === 8) {
         moveTasksToToday();
       }
     };
@@ -73,7 +73,7 @@ export default function App() {
 
     const checkTime = () => {
       const now = new Date();
-      if (now.getHours() === 0 && now.getMinutes() === 5) {
+      if (now.getHours() === 0 && now.getMinutes() === 9) {
         loadRoutineForTomorrow();
       }
     };

@@ -52,7 +52,7 @@ export default function App() {
 
     const checkTime = () => {
       const now = new Date();
-      if (now.getHours() === 0 && now.getMinutes() === 8) {
+      if (now.getHours() === 0 && now.getMinutes() === 18) {
         moveTasksToToday();
       }
     };
@@ -64,20 +64,27 @@ export default function App() {
 
   useEffect(() => {
     const loadRoutineForTomorrow = async () => {
-      const weekday = new Date().toLocaleDateString('en-US', { weekday: 'long' });
+      // Get the next day
+      const nextDay = new Date();
+      nextDay.setDate(nextDay.getDate() + 1); // Move to the next day
+      
+      // Format the weekday name for the next day
+      const weekday = nextDay.toLocaleDateString('en-US', { weekday: 'long' });
+      
+      // Load routine for the next day's name
       const routine = await AsyncStorage.getItem(`routine${weekday}`);
       if (routine) {
         await AsyncStorage.setItem('tomorrowTasks', routine);
       }
     };
-
+  
     const checkTime = () => {
       const now = new Date();
-      if (now.getHours() === 0 && now.getMinutes() === 9) {
+      if (now.getHours() === 0 && now.getMinutes() === 19) {
         loadRoutineForTomorrow();
       }
     };
-
+  
     const interval = setInterval(checkTime, 2000); // Check every 60 seconds
     return () => clearInterval(interval);
   }, []);

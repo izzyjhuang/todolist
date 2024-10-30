@@ -41,7 +41,6 @@ export default function App() {
   const todayDate = getDayOfMonth(today);
   const tomorrowDate = getDayOfMonth(tomorrow);
 
-  // Schedule task move from TomorrowScreen to TodayScreen at 3 AM
   useEffect(() => {
     const moveTasksToToday = async () => {
       const tomorrowTasks = await AsyncStorage.getItem('tomorrowTasks');
@@ -53,12 +52,11 @@ export default function App() {
 
     const checkTime = () => {
       const now = new Date();
-      if (now.getHours() === 0 && now.getMinutes() === 0) {
+      if (now.getHours() === 0 && now.getMinutes() === 2) {
         moveTasksToToday();
       }
     };
 
-    // Check every minute if it's 3 AM
     const interval = setInterval(checkTime, 60000); // Check every 60 seconds
 
     return () => clearInterval(interval); // Cleanup the interval on unmount
@@ -75,7 +73,7 @@ export default function App() {
 
     const checkTime = () => {
       const now = new Date();
-      if (now.getHours() === 0 && now.getMinutes() === 2) {
+      if (now.getHours() === 0 && now.getMinutes() === 3) {
         loadRoutineForTomorrow();
       }
     };

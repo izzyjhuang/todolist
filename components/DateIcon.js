@@ -27,7 +27,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   top: {
-    flex: 1,
+    flex: 11,
     justifyContent: 'center',
     backgroundColor: 'red',
     width: '100%',
@@ -36,18 +36,18 @@ const styles = StyleSheet.create({
     borderTopRightRadius: 8,
   },
   bottom: {
-    flex: 2,
+    flex: 19,
     justifyContent: 'center',
     alignItems: 'center',
   },
   weekday: {
     color: '#fff',
-    fontSize: 10,
+    fontSize: 9,
     fontWeight: 'bold',
   },
   date: {
     color: '#000',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: 'bold',
   },
 });

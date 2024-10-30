@@ -319,7 +319,17 @@ const handleSaveEdit = async () => {
   };
 
   const updateTimeBlocks = (newInterval, newDayStart, newDayEnd) => {
-    setBlocks(generateTimeBlocks(newInterval, newDayStart, newDayEnd));
+    const newBlocks = generateTimeBlocks(newInterval, newDayStart, newDayEnd);
+  
+    // Keep existing content in updated blocks
+    const updatedBlocks = newBlocks.map((newBlock, index) => {
+      const existingBlock = blocks[index];
+      return existingBlock
+        ? { ...newBlock, ...existingBlock } // Retain content from the existing block
+        : newBlock; // Use the new block if no existing block is available
+    });
+  
+    setBlocks(updatedBlocks);
     setDayStart(newDayStart);
     setDayEnd(newDayEnd);
   };
@@ -448,18 +458,7 @@ const handleSaveEdit = async () => {
   };
 
   const getPriorityColor = (priority) => {
-    switch (priority) {
-      case 'p1':
-        return customPriorities.p1.color;
-      case 'p2':
-        return customPriorities.p2.color;
-      case 'p3':
-        return customPriorities.p3.color;
-      case 'p4':
-        return customPriorities.p4.color;
-      default:
-        return 'transparent';
-    }
+    return customPriorities[priority]?.color || 'transparent';
   };
 
   const renderBlock = ({ item }) => (

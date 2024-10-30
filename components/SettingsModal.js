@@ -1,8 +1,7 @@
 // SettingsModal.js
 
 import React, { useState } from 'react';
-import { View, Text, Modal, Button, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
-
+import { View, Text, Modal, Button, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 // List of time zones with their respective UTC offsets
 const timeZoneList = [
   { label: "Pacific Time (UTC-7)", value: "PST" },
@@ -10,13 +9,6 @@ const timeZoneList = [
   { label: "Central Time (UTC-5)", value: "CST" },
   { label: "Eastern Time (UTC-4)", value: "EST" },
 ];
-
-// const defaultPriorities = {
-//   p1: { label: 'p1', color: '#D6B4FC' },
-//   p2: { label: 'p2', color: '#FF8184' },
-//   p3: { label: 'p3', color: '#FDAA48' },
-//   p4: { label: 'p4', color: '#FFFFC5' }
-// };
 
 // Time options for Day Starts and Day Ends
 const dayStartOptions = ['5:00', '6:00', '7:00', '8:00'];
@@ -216,70 +208,64 @@ const SettingsModal = ({
     <Modal visible={visible} animationType="slide" transparent={true}>
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
-          <Text style={styles.header}>Settings</Text>
+          <ScrollView contentContainerStyle={styles.scrollViewContent}>
+            <Text style={styles.header}>Settings</Text>
 
-          {/* Time Zone Selector */}
-          <Text style={styles.subHeader}>Time Zone:</Text>
-          <TouchableOpacity
-            style={styles.intervalButton}
-            onPress={() => setTimeZoneVisible((prev) => !prev)}
-          >
-            <Text style={styles.intervalButtonText}>
-              {timeZoneList.find((tz) => tz.value === selectedTimeZone)?.label}
-            </Text>
-          </TouchableOpacity>
-          {timeZoneVisible && renderTimeZoneOptions()}
+            <Text style={styles.subHeader}>Time Zone:</Text>
+            <TouchableOpacity
+              style={styles.intervalButton}
+              onPress={() => setTimeZoneVisible((prev) => !prev)}
+            >
+              <Text style={styles.intervalButtonText}>
+                {timeZoneList.find((tz) => tz.value === selectedTimeZone)?.label}
+              </Text>
+            </TouchableOpacity>
+            {timeZoneVisible && renderTimeZoneOptions()}
 
-          {/* Schedule Interval Selector */}
-          <Text style={styles.subHeader}>Schedule Interval:</Text>
-          <TouchableOpacity
-            style={styles.intervalButton}
-            onPress={() => setIntervalVisible((prev) => !prev)}
-          >
-            <Text style={styles.intervalButtonText}>{`${timeInterval} mins`}</Text>
-          </TouchableOpacity>
-          {intervalVisible && renderIntervalOptions()}
+            <Text style={styles.subHeader}>Schedule Interval:</Text>
+            <TouchableOpacity
+              style={styles.intervalButton}
+              onPress={() => setIntervalVisible((prev) => !prev)}
+            >
+              <Text style={styles.intervalButtonText}>{`${timeInterval} mins`}</Text>
+            </TouchableOpacity>
+            {intervalVisible && renderIntervalOptions()}
 
-          {/* Day Starts and Day Ends Side by Side */}
-          <View style={styles.dayTimeContainer}>
-            <View style={styles.dayTimeBlock}>
-              <Text style={styles.subHeader}>Day Starts:</Text>
-              <TouchableOpacity
-                style={styles.intervalButton}
-                onPress={() => setDayStartVisible((prev) => !prev)}
-              >
-                <Text style={styles.intervalButtonText}>{selectedDayStart}</Text>
-              </TouchableOpacity>
-              {dayStartVisible && renderDayStartOptions()}
+            <View style={styles.dayTimeContainer}>
+              <View style={styles.dayTimeBlock}>
+                <Text style={styles.subHeader}>Day Starts:</Text>
+                <TouchableOpacity
+                  style={styles.intervalButton}
+                  onPress={() => setDayStartVisible((prev) => !prev)}
+                >
+                  <Text style={styles.intervalButtonText}>{selectedDayStart}</Text>
+                </TouchableOpacity>
+                {dayStartVisible && renderDayStartOptions()}
+              </View>
+              <View style={styles.dayTimeBlock}>
+                <Text style={styles.subHeader}>Day Ends:</Text>
+                <TouchableOpacity
+                  style={styles.intervalButton}
+                  onPress={() => setDayEndVisible((prev) => !prev)}
+                >
+                  <Text style={styles.intervalButtonText}>{selectedDayEnd}</Text>
+                </TouchableOpacity>
+                {dayEndVisible && renderDayEndOptions()}
+              </View>
             </View>
 
-            <View style={styles.dayTimeBlock}>
-              <Text style={styles.subHeader}>Day Ends:</Text>
-              <TouchableOpacity
-                style={styles.intervalButton}
-                onPress={() => setDayEndVisible((prev) => !prev)}
-              >
-                <Text style={styles.intervalButtonText}>{selectedDayEnd}</Text>
-              </TouchableOpacity>
-              {dayEndVisible && renderDayEndOptions()}
+            <Text style={styles.subHeader}>Priority Labels:</Text>
+            {Object.keys(customPriorities).map(renderPriorityButton)}
+
+            <TouchableOpacity onPress={addNewPriority} style={styles.addButton}>
+              <Text style={styles.addButtonText}>Add New Label</Text>
+            </TouchableOpacity>
+
+            <View style={styles.buttonRow}>
+              <Button title="Save Settings" onPress={handleSaveSettings} />
+              <Button title="Close" onPress={onClose} />
             </View>
-          </View>
-
-          <Text style={styles.subHeader}>Priority Labels:</Text>
-
-          {/* Render priority buttons */}
-          {Object.keys(customPriorities).map(renderPriorityButton)}
-
-          {/* Button to add new priority */}
-          <TouchableOpacity onPress={addNewPriority} style={styles.addButton}>
-            <Text style={styles.addButtonText}>Add New Label</Text>
-          </TouchableOpacity>
-
-          {/* Save and Close Buttons */}
-          <View style={styles.buttonRow}>
-            <Button title="Save Settings" onPress={handleSaveSettings} />
-            <Button title="Close" onPress={onClose} />
-          </View>
+          </ScrollView>
         </View>
       </View>
     </Modal>

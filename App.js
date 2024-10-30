@@ -8,7 +8,7 @@ import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-
+import { StatusBar } from 'react-native';
 
 import TodayScreen from './screens/TodayScreen';
 import TomorrowScreen from './screens/TomorrowScreen';
@@ -86,6 +86,7 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       <PrioritiesProvider>
         <NavigationContainer>
           <Tab.Navigator

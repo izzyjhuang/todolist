@@ -1,6 +1,6 @@
 // RoutineScreen.js
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Button, Modal} from 'react-native';
 import { usePriorities } from '../components/PrioritiesContext';
 
@@ -10,37 +10,36 @@ import AddTodoModal from '../components/AddTodoModal';
 import SettingsModal from '../components/SettingsModal';
 
 const generateTimeBlocks = (interval = 15, dayStart = '6:00', dayEnd = '23:00') => {
-  const blocks = [];
-  let [startHour, startMinute] = dayStart.split(':').map(Number);
-  let [endHour, endMinute] = dayEnd.split(':').map(Number);
+    const blocks = [];
+    let [startHour, startMinute] = dayStart.split(':').map(Number);
+    let [endHour, endMinute] = dayEnd.split(':').map(Number);
 
-  if (endHour === 0) endHour = 24;
+    if (endHour === 0) endHour = 24;
 
-  const startTotalMinutes = startHour * 60 + startMinute;
-  const endTotalMinutes = endHour * 60 + endMinute;
-  const totalMinutes = endTotalMinutes - startTotalMinutes;
-  const totalBlocks = Math.floor(totalMinutes / interval);
-  let currentMinutes = startTotalMinutes;
+    const startTotalMinutes = startHour * 60 + startMinute;
+    const endTotalMinutes = endHour * 60 + endMinute;
+    let currentMinutes = startTotalMinutes;
 
-  for (let i = 0; i < totalBlocks; i++) {
-    const startHour = Math.floor(currentMinutes / 60);
-    const startMinute = currentMinutes % 60;
-    const startTime = `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
+    while (currentMinutes < endTotalMinutes) {
+        const startHour = Math.floor(currentMinutes / 60);
+        const startMinute = currentMinutes % 60;
+        const startTime = `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
 
-    currentMinutes += interval;
+        currentMinutes += interval;
 
-    let endHour = Math.floor(currentMinutes / 60);
-    if (endHour === 24) endHour = 0;
-    const endMinute = currentMinutes % 60;
-    const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+        let endHour = Math.floor(currentMinutes / 60);
+        if (endHour === 24) endHour = 0;
+        const endMinute = currentMinutes % 60;
+        const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
 
-    const timeRange = `${startTime}-${endTime}`;
+        const timeRange = `${startTime}-${endTime}`;
 
-    blocks.push({ id: i.toString(), time: timeRange, title: '', description: '', priority: 'none' });
-  }
+        blocks.push({ id: blocks.length.toString(), time: timeRange, title: '', description: '', priority: 'none' });
+    }
 
-  return blocks;
+    return blocks;
 };
+
 
 const RoutineScreen = () => {
   const { customPriorities, setCustomPriorities } = usePriorities();
@@ -57,10 +56,87 @@ const RoutineScreen = () => {
   const [history, setHistory] = useState([]);
   const [future, setFuture] = useState([]);
   const [resetConfirmationVisible, setResetConfirmationVisible] = useState(false); // Confirmation modal visibility
-
-
-  const dayOptions = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
   const [timeInterval, setTimeInterval] = useState(15);
+
+  const prevIntervalRef = useRef(timeInterval);
+  const dayOptions = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+  const adjustTimeBlocks = (newDayStart, newDayEnd) => {
+    const [startHour, startMinute] = newDayStart.split(':').map(Number);
+    const [endHour, endMinute] = newDayEnd.split(':').map(Number);
+  
+    const newStartTotalMinutes = startHour * 60 + startMinute;
+    const newEndTotalMinutes = (endHour === 0 ? 24 : endHour) * 60 + endMinute;
+  
+    const currentStartTotalMinutes = parseInt(blocks[0].time.split('-')[0].split(':')[0]) * 60 
+                                      + parseInt(blocks[0].time.split('-')[0].split(':')[1]);
+    const currentEndTotalMinutes = parseInt(blocks[blocks.length - 1].time.split('-')[1].split(':')[0]) * 60 
+                                      + parseInt(blocks[blocks.length - 1].time.split('-')[1].split(':')[1]);
+  
+    let updatedBlocks = [...blocks];
+  
+    // Add blocks at the beginning if newDayStart is earlier than the current start
+    if (newStartTotalMinutes < currentStartTotalMinutes) {
+      let currentMinutes = newStartTotalMinutes;
+      while (currentMinutes < currentStartTotalMinutes) {
+        const startHour = Math.floor(currentMinutes / 60);
+        const startMinute = currentMinutes % 60;
+        const startTime = `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
+  
+        currentMinutes += timeInterval;
+        const endHour = Math.floor(currentMinutes / 60);
+        const endMinute = currentMinutes % 60;
+        const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+  
+        updatedBlocks.unshift({ id: `${Date.now()}-${currentMinutes}`, time: `${startTime}-${endTime}`, title: '', description: '', priority: 'none' });
+      }
+    }
+  
+    // Remove blocks at the beginning if newDayStart is later than the current start
+    if (newStartTotalMinutes > currentStartTotalMinutes) {
+      updatedBlocks = updatedBlocks.filter((block) => {
+        const blockStartMinutes = parseInt(block.time.split('-')[0].split(':')[0]) * 60 + parseInt(block.time.split('-')[0].split(':')[1]);
+        return blockStartMinutes >= newStartTotalMinutes;
+      });
+    }
+  
+    // Add blocks at the end if newDayEnd is later than the current end
+    if (newEndTotalMinutes > currentEndTotalMinutes) {
+      let currentMinutes = currentEndTotalMinutes;
+      while (currentMinutes < newEndTotalMinutes) {
+        const startHour = Math.floor(currentMinutes / 60);
+        const startMinute = currentMinutes % 60;
+        const startTime = `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
+  
+        currentMinutes += timeInterval;
+        let endHour = Math.floor(currentMinutes / 60);
+        if (endHour === 24) endHour = 0;
+        const endMinute = currentMinutes % 60;
+        const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+  
+        updatedBlocks.push({ id: `${Date.now()}-${currentMinutes}`, time: `${startTime}-${endTime}`, title: '', description: '', priority: 'none' });
+      }
+    }
+  
+    // Remove blocks at the end if newDayEnd is earlier than the current end
+    if (newEndTotalMinutes < currentEndTotalMinutes) {
+      updatedBlocks = updatedBlocks.filter((block) => {
+        const blockEndMinutes = parseInt(block.time.split('-')[1].split(':')[0]) * 60 + parseInt(block.time.split('-')[1].split(':')[1]);
+        return blockEndMinutes <= newEndTotalMinutes;
+      });
+    }
+  
+    // Sort blocks by start time to ensure correct chronological order
+    updatedBlocks.sort((a, b) => {
+      const [aStartHour, aStartMinute] = a.time.split('-')[0].split(':').map(Number);
+      const [bStartHour, bStartMinute] = b.time.split('-')[0].split(':').map(Number);
+      return (aStartHour * 60 + aStartMinute) - (bStartHour * 60 + bStartMinute);
+    });
+  
+    setBlocks(updatedBlocks);
+    setDayStart(newDayStart);
+    setDayEnd(newDayEnd);
+  };
 
   useEffect(() => {
     const loadRoutine = async () => {
@@ -68,11 +144,11 @@ const RoutineScreen = () => {
       if (storedBlocks) {
         setBlocks(JSON.parse(storedBlocks));
       } else {
-        setBlocks(generateTimeBlocks());
+        setBlocks(generateTimeBlocks(timeInterval, dayStart, dayEnd));
       }
     };
     loadRoutine();
-  }, [selectedDay]);
+  }, [selectedDay, timeInterval, dayStart, dayEnd]);
 
   useEffect(() => {
     const saveRoutine = async () => {
@@ -105,20 +181,23 @@ const RoutineScreen = () => {
   };
 
   const updateTimeBlocks = (newInterval, newDayStart, newDayEnd) => {
-    const newBlocks = generateTimeBlocks(newInterval, newDayStart, newDayEnd);
-  
-    // Keep existing content in updated blocks
-    const updatedBlocks = newBlocks.map((newBlock, index) => {
-      const existingBlock = blocks[index];
-      return existingBlock
-        ? { ...newBlock, ...existingBlock } // Retain content from the existing block
-        : newBlock; // Use the new block if no existing block is available
-    });
-  
-    setBlocks(updatedBlocks);
+    if (newInterval !== prevIntervalRef.current) {
+        const newBlocks = generateTimeBlocks(newInterval, dayStart, dayEnd);
+        setBlocks(newBlocks);
+        setTimeInterval(newInterval);
+        prevIntervalRef.current = newInterval;
+    } else {
+        adjustTimeBlocks(newDayStart, newDayEnd);
+    }
     setDayStart(newDayStart);
     setDayEnd(newDayEnd);
-  };
+};
+
+
+const handleSaveSettings = () => {
+    updateTimeBlocks(timeInterval, dayStart, dayEnd);
+    setSettingsVisible(false);
+};
 
   const toggleSelectMode = () => {
     setIsSelecting(!isSelecting);
@@ -272,7 +351,7 @@ const RoutineScreen = () => {
   const renderDaySelector = () => (
     <View style={styles.daySelectorContainer}>
       <View style={styles.selectorRow}>
-        <Text style={styles.selectorText}>Routines for</Text>
+        <Text style={styles.selectorText}>Routine for</Text>
         <TouchableOpacity onPress={() => setIsDayPaletteVisible(!isDayPaletteVisible)} style={styles.selectedDay}>
           <Text style={styles.selectedDayText}>{selectedDay}</Text>
         </TouchableOpacity>

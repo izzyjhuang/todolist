@@ -1,6 +1,6 @@
 // SettingsModal.js
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, Modal, Button, StyleSheet, TextInput, TouchableOpacity, ScrollView } from 'react-native';
 // List of time zones with their respective UTC offsets
 const timeZoneList = [
@@ -33,13 +33,18 @@ const SettingsModal = ({
     const [selectedTimeZone, setSelectedTimeZone] = useState('PST'); // Default to Pacific Time
     const [dayStartVisible, setDayStartVisible] = useState(false); // Track day starts dropdown visibility
     const [dayEndVisible, setDayEndVisible] = useState(false); // Track day ends dropdown visibility
+    const [prevInterval, setPrevInterval] = useState(timeInterval); // Store previous interval
     // const [selectedDayStart, setSelectedDayStart] = useState(selectedDayStart || '6:00');
     // const [selectedDayEnd, setSelectedDayEnd] = useState(selectedDayEnd || '23:00');
   
   
+    useEffect(() => {
+      setPrevInterval(timeInterval); // Update previous interval whenever timeInterval changes
+    }, [timeInterval]);
+  
     const handleSaveSettings = () => {
-        updateTimeBlocks(timeInterval, selectedDayStart, selectedDayEnd); // Pass day start and end times
-        onClose();
+      updateTimeBlocks(timeInterval, selectedDayStart, selectedDayEnd, prevInterval); // Pass prevInterval as an argument
+      onClose();
     };
 
   // Function to add a new priority item

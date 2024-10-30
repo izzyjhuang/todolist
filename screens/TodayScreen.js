@@ -1,6 +1,6 @@
 // TodayScreen.js
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Button, Modal, TextInput } from 'react-native';
 import { usePriorities } from '../components/PrioritiesContext';
 
@@ -115,7 +115,87 @@ const TodayScreen = () => {
   const [newDate, setNewDate] = useState(new Date());
 
   const [timeInterval, setTimeInterval] = useState(15);
+  const prevIntervalRef = useRef(timeInterval);
+  const [resetConfirmationVisible, setResetConfirmationVisible] = useState(false); // Confirmation modal visibility
+
+
+  const adjustTimeBlocks = (newDayStart, newDayEnd) => {
+    const [startHour, startMinute] = newDayStart.split(':').map(Number);
+    const [endHour, endMinute] = newDayEnd.split(':').map(Number);
   
+    const newStartTotalMinutes = startHour * 60 + startMinute;
+    const newEndTotalMinutes = (endHour === 0 ? 24 : endHour) * 60 + endMinute;
+  
+    const currentStartTotalMinutes = parseInt(blocks[0].time.split('-')[0].split(':')[0]) * 60 
+                                      + parseInt(blocks[0].time.split('-')[0].split(':')[1]);
+    const currentEndTotalMinutes = parseInt(blocks[blocks.length - 1].time.split('-')[1].split(':')[0]) * 60 
+                                      + parseInt(blocks[blocks.length - 1].time.split('-')[1].split(':')[1]);
+  
+    let updatedBlocks = [...blocks];
+  
+    // Add blocks at the beginning if newDayStart is earlier than the current start
+    if (newStartTotalMinutes < currentStartTotalMinutes) {
+      let currentMinutes = newStartTotalMinutes;
+      while (currentMinutes < currentStartTotalMinutes) {
+        const startHour = Math.floor(currentMinutes / 60);
+        const startMinute = currentMinutes % 60;
+        const startTime = `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
+  
+        currentMinutes += timeInterval;
+        const endHour = Math.floor(currentMinutes / 60);
+        const endMinute = currentMinutes % 60;
+        const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+  
+        updatedBlocks.unshift({ id: `${Date.now()}-${currentMinutes}`, time: `${startTime}-${endTime}`, title: '', description: '', priority: 'none' });
+      }
+    }
+  
+    // Remove blocks at the beginning if newDayStart is later than the current start
+    if (newStartTotalMinutes > currentStartTotalMinutes) {
+      updatedBlocks = updatedBlocks.filter((block) => {
+        const blockStartMinutes = parseInt(block.time.split('-')[0].split(':')[0]) * 60 + parseInt(block.time.split('-')[0].split(':')[1]);
+        return blockStartMinutes >= newStartTotalMinutes;
+      });
+    }
+  
+    // Add blocks at the end if newDayEnd is later than the current end
+    if (newEndTotalMinutes > currentEndTotalMinutes) {
+      let currentMinutes = currentEndTotalMinutes;
+      while (currentMinutes < newEndTotalMinutes) {
+        const startHour = Math.floor(currentMinutes / 60);
+        const startMinute = currentMinutes % 60;
+        const startTime = `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
+  
+        currentMinutes += timeInterval;
+        let endHour = Math.floor(currentMinutes / 60);
+        if (endHour === 24) endHour = 0;
+        const endMinute = currentMinutes % 60;
+        const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+  
+        updatedBlocks.push({ id: `${Date.now()}-${currentMinutes}`, time: `${startTime}-${endTime}`, title: '', description: '', priority: 'none' });
+      }
+    }
+  
+    // Remove blocks at the end if newDayEnd is earlier than the current end
+    if (newEndTotalMinutes < currentEndTotalMinutes) {
+      updatedBlocks = updatedBlocks.filter((block) => {
+        const blockEndMinutes = parseInt(block.time.split('-')[1].split(':')[0]) * 60 + parseInt(block.time.split('-')[1].split(':')[1]);
+        return blockEndMinutes <= newEndTotalMinutes;
+      });
+    }
+  
+    // Sort blocks by start time to ensure correct chronological order
+    updatedBlocks.sort((a, b) => {
+      const [aStartHour, aStartMinute] = a.time.split('-')[0].split(':').map(Number);
+      const [bStartHour, bStartMinute] = b.time.split('-')[0].split(':').map(Number);
+      return (aStartHour * 60 + aStartMinute) - (bStartHour * 60 + bStartMinute);
+    });
+  
+    setBlocks(updatedBlocks);
+    setDayStart(newDayStart);
+    setDayEnd(newDayEnd);
+  };
+
   const renderReminderItem = ({ item }) => (
     <Swipeable renderRightActions={() => renderRightActions(item.id)}>
       <TouchableOpacity onPress={() => openEditModal(item)} style={styles.reminderItem}>
@@ -319,20 +399,17 @@ const handleSaveEdit = async () => {
   };
 
   const updateTimeBlocks = (newInterval, newDayStart, newDayEnd) => {
-    const newBlocks = generateTimeBlocks(newInterval, newDayStart, newDayEnd);
-  
-    // Keep existing content in updated blocks
-    const updatedBlocks = newBlocks.map((newBlock, index) => {
-      const existingBlock = blocks[index];
-      return existingBlock
-        ? { ...newBlock, ...existingBlock } // Retain content from the existing block
-        : newBlock; // Use the new block if no existing block is available
-    });
-  
-    setBlocks(updatedBlocks);
+    if (newInterval !== prevIntervalRef.current) {
+        const newBlocks = generateTimeBlocks(newInterval, dayStart, dayEnd);
+        setBlocks(newBlocks);
+        setTimeInterval(newInterval);
+        prevIntervalRef.current = newInterval;
+    } else {
+        adjustTimeBlocks(newDayStart, newDayEnd);
+    }
     setDayStart(newDayStart);
     setDayEnd(newDayEnd);
-  };
+};
 
   const toggleSelectMode = () => {
     setIsSelecting(!isSelecting);
@@ -418,6 +495,21 @@ const handleSaveEdit = async () => {
     }
   };
 
+  const handleReset = () => {
+    saveHistory(); // Save the current state before resetting
+    const clearedBlocks = blocks.map(block => ({ ...block, title: '', description: '', priority: 'none' }));
+    setBlocks(clearedBlocks);
+    setResetConfirmationVisible(false); // Close the confirmation modal after reset
+  };
+  
+  const confirmReset = () => {
+    setResetConfirmationVisible(true);
+  };
+  
+  const cancelReset = () => {
+    setResetConfirmationVisible(false);
+  };
+
   const handleAddTodo = (newTask) => {
     saveHistory();
 
@@ -499,6 +591,7 @@ const handleSaveEdit = async () => {
         <TouchableOpacity onPress={() => setSettingsVisible(true)}>
           <Icon name="settings" size={30} color="#1E8AFF" />
         </TouchableOpacity>
+        <Button title="Reset" onPress={confirmReset} />
         <Button title="↺" onPress={handleUndo} disabled={history.length === 0} />
         <Button title="↻" onPress={handleRestore} disabled={future.length === 0} />
         <Button title={isSelecting ? "Cancel Select" : "Select"} onPress={toggleSelectMode} />
@@ -612,6 +705,17 @@ const handleSaveEdit = async () => {
         initialPriority={entryBlock?.priority}
         customPriorities={customPriorities}
       />
+      <Modal visible={resetConfirmationVisible} transparent={true} animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.confirmationModal}>
+            <Text style={styles.modalText}>This will reset the routine for tomorrow.</Text>
+            <View style={styles.modalButtons}>
+              <Button title="Confirm" onPress={handleReset} />
+              <Button title="Cancel" onPress={cancelReset} color="red" />
+            </View>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
@@ -767,6 +871,29 @@ const styles = StyleSheet.create({
     color: '#888',
     textAlign: 'center',
     marginVertical: 10,
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  confirmationModal: {
+    width: 300,
+    padding: 20,
+    backgroundColor: 'white',
+    borderRadius: 10,
+    alignItems: 'center',
+  },
+  modalText: {
+    fontSize: 16,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    width: '60%',
   },
 });
 

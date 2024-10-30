@@ -18,7 +18,8 @@ import AllTodosScreen from './screens/AllTodosScreen';
 const Tab = createBottomTabNavigator();
 
 export default function App() {
-  const [taskUpdated, setTaskUpdated] = useState(false);
+  const [todayTaskUpdated, setTodayTaskUpdated] = useState(false);
+  const [tomorrowTaskUpdated, setTomorrowTaskUpdated] = useState(false);
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(today.getDate() + 1);
@@ -31,48 +32,61 @@ export default function App() {
   const todayDate = getDayOfMonth(today);
   const tomorrowDate = getDayOfMonth(tomorrow);
 
+  // Function to move tasks from 'tomorrowTasks' to 'todayTasks'
   const moveTasksToToday = useCallback(async () => {
     const tomorrowTasks = await AsyncStorage.getItem('tomorrowTasks');
     if (tomorrowTasks) {
-      await AsyncStorage.setItem('todayTasks', tomorrowTasks);
-      await AsyncStorage.removeItem('tomorrowTasks');
-      setTaskUpdated((prev) => !prev); // Toggle to force rerender
+      await AsyncStorage.setItem('todayTasks', tomorrowTasks); // Move tasks to today
+      await AsyncStorage.removeItem('tomorrowTasks');          // Clear tomorrow's tasks
+      setTodayTaskUpdated((prev) => !prev);                    // Update after moving completes
     }
   }, []);
 
+  // Function to load routine into 'tomorrowTasks'
   const loadRoutineForTomorrow = useCallback(async () => {
     const nextDay = new Date();
     nextDay.setDate(nextDay.getDate() + 1);
     const weekday = nextDay.toLocaleDateString('en-US', { weekday: 'long' });
-
+  
     const routine = await AsyncStorage.getItem(`routine${weekday}`);
     if (routine) {
-      await AsyncStorage.setItem('tomorrowTasks', routine);
-      setTaskUpdated((prev) => !prev); // Toggle to force rerender
+      await AsyncStorage.setItem('tomorrowTasks', routine);    // Load routine for tomorrow
+      setTomorrowTaskUpdated((prev) => !prev);                 // Only trigger TomorrowScreen update
     }
-  }, []);
+  }, []);  
 
-  const checkTimeAndUpdate = useCallback(() => {
+  // Run `moveTasksToToday` at a specific time
+useEffect(() => {
+  const checkMoveTasks = () => {
     const now = new Date();
     if (now.getHours() === 0 && now.getMinutes() === 1) {
       moveTasksToToday();
     }
+  };
+
+  const moveInterval = setInterval(checkMoveTasks, 60000); // Check every minute
+  return () => clearInterval(moveInterval); // Cleanup on unmount
+}, [moveTasksToToday]);
+
+// Run `loadRoutineForTomorrow` at a specific time
+useEffect(() => {
+  const checkLoadRoutine = () => {
+    const now = new Date();
     if (now.getHours() === 0 && now.getMinutes() === 2) {
       loadRoutineForTomorrow();
     }
-  }, [moveTasksToToday, loadRoutineForTomorrow]);
+  };
 
-  useEffect(() => {
-    const interval = setInterval(checkTimeAndUpdate, 60000); // Check every 60 seconds
-    return () => clearInterval(interval); // Cleanup the interval on unmount
-  }, [checkTimeAndUpdate]);
+  const routineInterval = setInterval(checkLoadRoutine, 60000); // Check every minute
+  return () => clearInterval(routineInterval); // Cleanup on unmount
+}, [loadRoutineForTomorrow]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       <PrioritiesProvider>
         <NavigationContainer>
-          <Tab.Navigator
+        <Tab.Navigator
             screenOptions={({ route }) => ({
               tabBarIcon: ({ color, size }) => {
                 if (route.name === 'Today') {
@@ -94,10 +108,10 @@ export default function App() {
             })}
           >
             <Tab.Screen name="Today">
-              {(props) => <TodayScreen {...props} taskUpdated={taskUpdated} />}
+              {(props) => <TodayScreen {...props} todayTaskUpdated={todayTaskUpdated} />}
             </Tab.Screen>
             <Tab.Screen name="Tomorrow">
-              {(props) => <TomorrowScreen {...props} taskUpdated={taskUpdated} />}
+              {(props) => <TomorrowScreen {...props} tomorrowTaskUpdated={tomorrowTaskUpdated} />}
             </Tab.Screen>
             <Tab.Screen name="Reminders" component={AllTodosScreen} />
             <Tab.Screen name="Routine" component={RoutineScreen} />

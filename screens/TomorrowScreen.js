@@ -67,7 +67,7 @@ const generateTimeBlocks = (interval = 15, dayStart = '6:00', dayEnd = '23:00') 
   return blocks;
 };
 
-const TomorrowScreen = ({ taskUpdated }) => {
+const TomorrowScreen = ({ tomorrowTaskUpdated }) => {
   const { customPriorities, setCustomPriorities } = usePriorities();
   const [dayStart, setDayStart] = useState('6:00');
   const [dayEnd, setDayEnd] = useState('23:00');
@@ -91,6 +91,28 @@ const TomorrowScreen = ({ taskUpdated }) => {
   const [newDate, setNewDate] = useState(new Date());
   const [resetConfirmationVisible, setResetConfirmationVisible] = useState(false); // Confirmation modal visibility
 
+  const loadRoutineForTomorrow = useCallback(async () => {
+    const nextDay = new Date();
+    nextDay.setDate(nextDay.getDate() + 1);
+    const weekday = nextDay.toLocaleDateString('en-US', { weekday: 'long' });
+
+    const routine = await AsyncStorage.getItem(`routine${weekday}`);
+    if (routine) {
+      await AsyncStorage.setItem('tomorrowTasks', routine);
+    }
+  }, []);
+
+  useEffect(() => {
+    const loadTomorrowTasks = async () => {
+      const storedBlocks = await AsyncStorage.getItem('tomorrowTasks');
+      if (storedBlocks) {
+        setBlocks(JSON.parse(storedBlocks));
+      }
+    };
+  
+    loadTomorrowTasks();
+  }, [tomorrowTaskUpdated]);
+  
   const adjustTimeBlocks = (newDayStart, newDayEnd) => {
     const [startHour, startMinute] = newDayStart.split(':').map(Number);
     const [endHour, endMinute] = newDayEnd.split(':').map(Number);
@@ -104,23 +126,6 @@ const TomorrowScreen = ({ taskUpdated }) => {
                                       + parseInt(blocks[blocks.length - 1].time.split('-')[1].split(':')[1]);
   
     let updatedBlocks = [...blocks];
-
-    const loadRoutineForTomorrow = useCallback(async () => {
-      const nextDay = new Date();
-      nextDay.setDate(nextDay.getDate() + 1);
-      const weekday = nextDay.toLocaleDateString('en-US', { weekday: 'long' });
-  
-      const routine = await AsyncStorage.getItem(`routine${weekday}`);
-      if (routine) {
-        await AsyncStorage.setItem('tomorrowTasks', routine);
-      }
-    }, []);
-  
-    useFocusEffect(
-      useCallback(() => {
-        loadRoutineForTomorrow();
-      }, [loadRoutineForTomorrow])
-    );
   
     // Add blocks at the beginning if newDayStart is earlier than the current start
     if (newStartTotalMinutes < currentStartTotalMinutes) {
@@ -330,7 +335,7 @@ const filterTomorrowReminders = (reminders) => {
 
   useEffect(() => {
     loadTomorrowTasks(); // Load tasks initially and whenever taskUpdated changes
-  }, [taskUpdated, loadTomorrowTasks]);
+  }, [tomorrowTaskUpdated, loadTomorrowTasks]);
 
   useEffect(() => {
     // Save blocks to AsyncStorage when updated

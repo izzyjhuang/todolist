@@ -94,7 +94,7 @@ const generateTimeBlocks = (interval = 15, dayStart = '6:00', dayEnd = '23:00') 
   return blocks;
 };
 
-const TodayScreen = ({ taskUpdated }) => {
+const TodayScreen = ({ todayTaskUpdated }) => {
   const { customPriorities, setCustomPriorities } = usePriorities();
   const [dayStart, setDayStart] = useState('6:00');
   const [dayEnd, setDayEnd] = useState('23:00');
@@ -120,6 +120,24 @@ const TodayScreen = ({ taskUpdated }) => {
   const prevIntervalRef = useRef(timeInterval);
   const [resetConfirmationVisible, setResetConfirmationVisible] = useState(false); // Confirmation modal visibility
 
+  const moveTasksToToday = useCallback(async () => {
+    const tomorrowTasks = await AsyncStorage.getItem('tomorrowTasks');
+    if (tomorrowTasks) {
+      await AsyncStorage.setItem('todayTasks', tomorrowTasks);
+      await AsyncStorage.removeItem('tomorrowTasks');
+    }
+  }, []);
+
+  useEffect(() => {
+  const loadTodayTasks = async () => {
+    const storedBlocks = await AsyncStorage.getItem('todayTasks');
+    if (storedBlocks) {
+      setBlocks(JSON.parse(storedBlocks));
+    }
+  };
+
+  loadTodayTasks();
+}, [todayTaskUpdated]);
 
   const adjustTimeBlocks = (newDayStart, newDayEnd) => {
     const [startHour, startMinute] = newDayStart.split(':').map(Number);
@@ -134,20 +152,6 @@ const TodayScreen = ({ taskUpdated }) => {
                                       + parseInt(blocks[blocks.length - 1].time.split('-')[1].split(':')[1]);
   
     let updatedBlocks = [...blocks];
-  
-    const moveTasksToToday = useCallback(async () => {
-      const tomorrowTasks = await AsyncStorage.getItem('tomorrowTasks');
-      if (tomorrowTasks) {
-        await AsyncStorage.setItem('todayTasks', tomorrowTasks);
-        await AsyncStorage.removeItem('tomorrowTasks');
-      }
-    }, []);
-  
-    useFocusEffect(
-      useCallback(() => {
-        moveTasksToToday();
-      }, [moveTasksToToday])
-    );
 
     // Add blocks at the beginning if newDayStart is earlier than the current start
     if (newStartTotalMinutes < currentStartTotalMinutes) {
@@ -382,7 +386,7 @@ const handleSaveEdit = async () => {
 
   useEffect(() => {
     loadTodayTasks(); // Load tasks on initial render and when taskUpdated changes
-  }, [taskUpdated, loadTodayTasks]);
+  }, [todayTaskUpdated, loadTodayTasks]);
 
   useEffect(() => {
     // Save blocks to AsyncStorage when updated

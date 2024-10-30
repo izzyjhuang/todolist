@@ -305,9 +305,10 @@ const styles = StyleSheet.create({
     intervalButtonText: {
       fontSize: 16,
       color: 'black',
+      textAlign: 'center',
     },
     intervalPalette: {
-      flexDirection: 'row',
+      flexDirection: 'column',
       marginBottom: 20,
       justifyContent: 'space-between',
     },
@@ -315,6 +316,7 @@ const styles = StyleSheet.create({
       padding: 10,
       backgroundColor: '#e0e0e0',
       borderRadius: 8,
+      marginVertical: 2,
     },
     timeZonePalette: {
       flexDirection: 'column',
@@ -329,6 +331,7 @@ const styles = StyleSheet.create({
     intervalText: {
       fontSize: 16,
       color: 'black',
+      textAlign: 'center',
     },
     dayTimeContainer: {
       flexDirection: 'row',

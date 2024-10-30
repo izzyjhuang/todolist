@@ -52,12 +52,12 @@ export default function App() {
 
     const checkTime = () => {
       const now = new Date();
-      if (now.getHours() === 0 && now.getMinutes() === 18) {
+      if (now.getHours() === 0 && now.getMinutes() === 26) {
         moveTasksToToday();
       }
     };
 
-    const interval = setInterval(checkTime, 2000); // Check every 60 seconds
+    const interval = setInterval(checkTime, 60000); // Check every 60 seconds
 
     return () => clearInterval(interval); // Cleanup the interval on unmount
   }, []);
@@ -80,12 +80,12 @@ export default function App() {
   
     const checkTime = () => {
       const now = new Date();
-      if (now.getHours() === 0 && now.getMinutes() === 19) {
+      if (now.getHours() === 0 && now.getMinutes() === 28) {
         loadRoutineForTomorrow();
       }
     };
   
-    const interval = setInterval(checkTime, 2000); // Check every 60 seconds
+    const interval = setInterval(checkTime, 60000); // Check every 60 seconds
     return () => clearInterval(interval);
   }, []);
 

@@ -11,10 +11,20 @@ import {
   StyleSheet,
 } from 'react-native';
 
-const AddTodoModal = ({ visible, onClose, onAddTodo, initialTitle, initialDescription, initialPriority, customPriorities = {}}) => {
-    const [title, setTitle] = useState('');
-    const [description, setDescription] = useState('');
-    const [priority, setPriority] = useState('none');
+const AddTodoModal = ({
+  visible,
+  onClose,
+  onAddTodo,
+  initialTitle,
+  initialDescription,
+  initialPriority,
+  customPriorities = {},
+}) => {
+  const [title, setTitle] = useState('');
+  const [description, setDescription] = useState('');
+  const [priority, setPriority] = useState('none');
+  const isEditing = initialTitle || initialDescription; // Determine if this is an edit
+
 
   // Populate fields when modal opens with initial values
   useEffect(() => {
@@ -38,11 +48,30 @@ const AddTodoModal = ({ visible, onClose, onAddTodo, initialTitle, initialDescri
     onClose();
   };
 
+  const handleSaveTask = () => {
+    const newTask = {
+      title,
+      description,
+      priority,
+    };
+    onAddTodo(newTask);
+    clearFields();
+    onClose();
+  };
+
+  const clearFields = () => {
+    setTitle('');
+    setDescription('');
+    setPriority('none');
+  };
+
   return (
     <Modal visible={visible} animationType="slide" transparent={true}>
       <View style={styles.modalContainer}>
         <View style={styles.modalContent}>
-          <Text style={styles.header}>Add Task for This Time Block</Text>
+          <Text style={styles.header}>
+            {isEditing ? 'Edit Task for This Time Block' : 'Add Task for This Time Block'}
+          </Text>
           <TextInput
             placeholder="Title"
             style={styles.input}
@@ -59,7 +88,6 @@ const AddTodoModal = ({ visible, onClose, onAddTodo, initialTitle, initialDescri
           {/* Priority Selection */}
           <View style={styles.priorityContainer}>
             <Text style={styles.priorityHeader}>Priority:</Text>
-
             {Object.keys(customPriorities).map((priorityKey) => {
               const priorityItem = customPriorities[priorityKey];
               return (
@@ -77,7 +105,7 @@ const AddTodoModal = ({ visible, onClose, onAddTodo, initialTitle, initialDescri
               );
             })}
 
-            <TouchableOpacity onPress={() => setPriority('none')}>
+<TouchableOpacity onPress={() => setPriority('none')}>
               <Text
                 style={[
                   styles.priorityButton,
@@ -90,11 +118,14 @@ const AddTodoModal = ({ visible, onClose, onAddTodo, initialTitle, initialDescri
             </TouchableOpacity>
           </View>
 
-          {/* Add Task Button */}
-          <Button title="Add Task" onPress={handleAddTodo} />
+          {/* Save Task Button */}
+          <Button title={isEditing ? "Save Task" : "Add Task"} onPress={handleSaveTask} />
+
+          {/* Clear Button */}
+          <Button title="Clear" onPress={clearFields} color="orange" />
 
           {/* Close Modal */}
-          <Button title="Close" onPress={onClose} />
+          <Button title="Close" onPress={onClose} color="red" />
         </View>
       </View>
     </Modal>

@@ -254,14 +254,13 @@ const SettingsModal = ({
               </View>
             </View>
 
+            {/* Priority Labels */}
             <Text style={styles.subHeader}>Priority Labels:</Text>
-            {Object.keys(customPriorities).map(renderPriorityButton)}
+            {Object.keys(customPriorities).map(renderPriorityButton)}            
 
-            <TouchableOpacity onPress={addNewPriority} style={styles.addButton}>
-              <Text style={styles.addButtonText}>Add New Label</Text>
-            </TouchableOpacity>
-
+            {/* Save and Close Buttons */}
             <View style={styles.buttonRow}>
+              <Button title="Add New Label" onPress={addNewPriority} />
               <Button title="Save Settings" onPress={handleSaveSettings} />
               <Button title="Close" onPress={onClose} />
             </View>
@@ -340,7 +339,7 @@ const styles = StyleSheet.create({
       marginHorizontal: 5, // Adds spacing between the two dropdowns
     },
     priorityBlock: {
-      marginBottom: 20,
+      marginBottom: 15,
     },
     priorityRow: {
       flexDirection: 'row',
@@ -368,16 +367,16 @@ const styles = StyleSheet.create({
       fontSize: 20,
       color: 'red',
     },
-    addButton: {
-      marginTop: 20,
-      alignItems: 'center',
-    },
-    addButtonText: {
-      color: '#1E8AFF',
-      fontSize: 18,
-    },
+    // addButton: {
+    //   marginTop: 20,
+    //   alignItems: 'center',
+    // },
+    // addButtonText: {
+    //   color: '#1E8AFF',
+    //   fontSize: 18,
+    // },
     buttonRow: {
-      marginTop: 20,
+      marginTop: 5,
     },
     colorPalette: {
       flexDirection: 'row',

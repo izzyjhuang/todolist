@@ -272,7 +272,7 @@ const AllTodosScreen = () => {
                 />
             </View>
             <Button title={editingIndex !== null ? 'Save Changes' : 'Add'} onPress={handleAddOrEditTodo} />
-            <Button title="Close" onPress={() => {
+            <Button title="Close" color="red" onPress={() => {
             setNewTitle('');         // Clear title field
             setNewDescription('');    // Clear description field
             setNewDate(new Date());   // Reset date to today

@@ -210,18 +210,26 @@ const toggleSelectMode = () => {
   };
 
   const handleBlockPressSelectMode = (block) => {
+    const blockIndex = parseInt(block.id);
+  
     if (selectedBlocks.length === 0) {
+      // Start a new selection if no blocks are selected
       setSelectedBlocks([block]);
     } else {
-      const lastSelected = selectedBlocks[selectedBlocks.length - 1];
-      const blockIndex = parseInt(block.id);
-      const lastIndex = parseInt(lastSelected.id);
+      const firstSelectedIndex = parseInt(selectedBlocks[0].id);
+      const lastSelectedIndex = parseInt(selectedBlocks[selectedBlocks.length - 1].id);
   
-      if (blockIndex > lastIndex) {
-        const newSelection = blocks.slice(lastIndex, blockIndex + 1);
+      if (blockIndex > lastSelectedIndex) {
+        // If the new block is after the last selected, extend the selection forward
+        const newSelection = blocks.slice(firstSelectedIndex, blockIndex + 1);
+        setSelectedBlocks(newSelection);
+      } else if (blockIndex < firstSelectedIndex) {
+        // If the new block is before the first selected, extend the selection backward
+        const newSelection = blocks.slice(blockIndex, lastSelectedIndex + 1);
         setSelectedBlocks(newSelection);
       } else {
-        const newSelection = blocks.slice(blockIndex, lastIndex + 1);
+        // If the block is within the current selection, reduce the selection up to the clicked block
+        const newSelection = selectedBlocks.filter(b => parseInt(b.id) <= blockIndex);
         setSelectedBlocks(newSelection);
       }
     }
@@ -336,7 +344,8 @@ const toggleSelectMode = () => {
   };
 
   const handleCancel = () => {
-    setSelectedBlocks([]);
+    setSelectedBlocks([]); // Clear any selected blocks
+    setIsSelecting(false); // Exit select mode and return to entry mode
   };
 
   const getPriorityColor = (priority) => {

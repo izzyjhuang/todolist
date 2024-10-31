@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import 'react-native-get-random-values';
 import eventEmitter from '../components/EventEmitter';
 
-const AllTodosScreen = () => {
+const RemindersScreen = () => {
   const [todos, setTodos] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -156,13 +156,13 @@ const AllTodosScreen = () => {
     const now = new Date();
     const todayDate = now.toDateString();
     const endOfWeek = new Date(now);
-    endOfWeek.setDate(now.getDate() + 7);
+    endOfWeek.setDate(now.getDate() + 6);
 
     const sections = [
         { title: 'Archived ', data: [], collapsible: true }, // Add Archived section
         { title: 'Past Due', data: [] },
         { title: 'Today', data: [] },
-        { title: 'This Week', data: [] },
+        { title: 'Upcoming Week', data: [] },
         { title: 'Scheduled', data: [] },
       ];
   
@@ -450,4 +450,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AllTodosScreen;
+export default RemindersScreen;

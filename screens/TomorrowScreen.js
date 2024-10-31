@@ -298,7 +298,7 @@ const handleSaveEdit = async () => {
   // Filter to show only tomorrow’s reminders
   filterTomorrowReminders(updatedReminders); 
   
-  // Emit an event to notify AllTodosScreen of the update
+  // Emit an event to notify RemindersScreen of the update
   eventEmitter.emit('reminderUpdated');
   
   // Close the edit modal and reset state

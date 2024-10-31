@@ -18,7 +18,20 @@ const AllTodosScreen = () => {
   const [history, setHistory] = useState([]);
   const [future, setFuture] = useState([]);
   const [showArchived, setShowArchived] = useState(false); // State for archived section visibility
+  const [newColor, setNewColor] = useState('#D3D3D3'); // Default to gray
+  const colors = ['#000', '#FF8184', '#FDAA48', '#FFFFC5', '#D1FFBD', '#90D5FF', '#D3D3D3'];
 
+  const renderColorPalette = () => (
+    <View style={styles.colorPalette}>
+      {colors.map((color) => (
+        <TouchableOpacity
+          key={color}
+          style={[styles.colorOption, { backgroundColor: color }]}
+          onPress={() => setNewColor(color)}
+        />
+      ))}
+    </View>
+  );
 
   useEffect(() => {
     const loadTodos = async () => {
@@ -115,29 +128,28 @@ const AllTodosScreen = () => {
   };
 
   const handleAddOrEditTodo = () => {
-    saveHistory(); // Save the current state for undo functionality
+    saveHistory();
     let updatedTodos;
   
     if (editingIndex !== null) {
-      // Editing an existing todo
       updatedTodos = todos.map(todo =>
         todo.id === editingIndex
-          ? { ...todo, title: newTitle, description: newDescription, date: newDate }
+          ? { ...todo, title: newTitle, description: newDescription, date: newDate, color: newColor }
           : todo
       );
-      setEditingIndex(null); // Reset editing index after editing
+      setEditingIndex(null);
     } else {
-      // Adding a new todo
-      const newTodo = { id: uuidv4(), title: newTitle, description: newDescription, date: newDate, completed: false };
+      const newTodo = { id: uuidv4(), title: newTitle, description: newDescription, date: newDate, completed: false, color: newColor };
       updatedTodos = [...todos, newTodo];
     }
   
-    saveTodos(updatedTodos); // Save the updated list of todos
-    eventEmitter.emit('reminderUpdated'); // Emit an event for update
-    setModalVisible(false); // Close the modal after adding or editing
-    setNewTitle(''); // Reset the title input
-    setNewDescription(''); // Reset the description input
-    setNewDate(new Date()); // Reset the date input to today’s date
+    saveTodos(updatedTodos);
+    eventEmitter.emit('reminderUpdated');
+    setModalVisible(false);
+    setNewTitle('');
+    setNewDescription('');
+    setNewDate(new Date());
+    setNewColor('#D3D3D3'); // Reset color to default gray
   };
   
   const toggleComplete = async (id) => {
@@ -238,7 +250,11 @@ const AllTodosScreen = () => {
     <Swipeable renderRightActions={() => renderRightActions(item.id)}>
       <TouchableOpacity onPress={() => handleEditTodo(item.id)} style={styles.todoItem}>
         <TouchableOpacity onPress={() => toggleComplete(item.id)}>
-            <Icon name={item.completed ? "check-circle" : "radio-button-unchecked"} size={24} color={item.completed ? "green" : "gray"} />
+        <Icon
+            name={item.completed ? "check-circle" : "radio-button-unchecked"}
+            size={24}
+            color={item.completed ? "green" : (item.color || "gray")}
+            />
         </TouchableOpacity>
         <View style={styles.todoTextContainer}>
             <Text style={[styles.todoText, item.completed && styles.completedText]}>{item.title}</Text>
@@ -298,6 +314,8 @@ const AllTodosScreen = () => {
                 style={styles.datePicker}
                 />
             </View>
+            <Text style={{ marginBottom: 5 }}>Select Color:</Text>
+            {renderColorPalette()}
             <Button title={editingIndex !== null ? 'Save Changes' : 'Add'} onPress={handleAddOrEditTodo} />
             <Button title="Close" color="red" onPress={() => {
             setNewTitle('');         // Clear title field
@@ -447,6 +465,19 @@ const styles = StyleSheet.create({
   completedText: {
     color: 'gray',
     textDecorationLine: 'line-through',
+  },
+  colorPalette: {
+    flexDirection: 'row',
+    marginTop: 10,
+    justifyContent: 'center',
+  },
+  colorOption: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginHorizontal: 5,
+    borderWidth: 1,
+    borderColor: '#ccc',
   },
 });
 

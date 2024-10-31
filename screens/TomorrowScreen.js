@@ -202,9 +202,9 @@ const TomorrowScreen = ({ tomorrowTaskUpdated }) => {
             <Text style={[styles.reminderDescription, item.completed && styles.completedText]}>{item.description}</Text>
           ) : null}
         </View>
-        <Text style={[styles.reminderDate, item.completed && styles.completedText]}>
+        {/* <Text style={[styles.reminderDate, item.completed && styles.completedText]}>
           {new Date(item.date).toLocaleDateString('en-US')}
-        </Text>
+        </Text> */}
       </TouchableOpacity>
     </Swipeable>
   );

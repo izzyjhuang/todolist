@@ -243,16 +243,22 @@ const TodayScreen = ({ todayTaskUpdated }) => {
 
   // Load reminders for today from AsyncStorage
   useEffect(() => {
+    const setToMidnight = (date) => {
+      const newDate = new Date(date);
+      newDate.setHours(0, 0, 0, 0); // Normalize to midnight
+      return newDate;
+    };
+  
     const loadTodayReminders = async () => {
       const storedTodos = await AsyncStorage.getItem('todos');
-      const todayDate = new Date().toISOString().split('T')[0]; // Ensure today's date is recalculated every time
+      const todayDate = setToMidnight(new Date()); // Normalize today's date to midnight
   
       let todayReminders = [];
   
       if (storedTodos) {
         const todos = JSON.parse(storedTodos);
         todayReminders = todos.filter(
-          (todo) => new Date(todo.date).toISOString().split('T')[0] === todayDate
+          (todo) => setToMidnight(new Date(todo.date)).getTime() === todayDate.getTime() // Compare dates without time
         );
       }
   

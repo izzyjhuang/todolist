@@ -167,18 +167,27 @@ const RemindersScreen = () => {
       ];
   
 
+      const setToMidnight = (date) => {
+        const newDate = new Date(date);
+        newDate.setHours(0, 0, 0, 0); // Set time to midnight
+        return newDate;
+      };
+      
+      const today = setToMidnight(new Date());
+      
       todos.forEach(todo => {
-        const todoDate = new Date(todo.date);
-        if (todo.completed && todoDate < now) {
-          sections[0].data.push(todo); // Add to Archived if completed and past due
-        } else if (todoDate < now && todoDate.toDateString() !== todayDate) {
-          sections[1].data.push(todo);
-        } else if (todoDate.toDateString() === todayDate) {
-          sections[2].data.push(todo);
-        } else if (todoDate > now && todoDate <= endOfWeek) {
-          sections[3].data.push(todo);
+        const todoDate = setToMidnight(new Date(todo.date));
+      
+        if (todo.completed && todoDate < today) {
+          sections[0].data.push(todo); // Add to Archived if completed and in the past
+        } else if (todoDate < today) {
+          sections[1].data.push(todo); // Past Due section
+        } else if (todoDate.getTime() === today.getTime()) {
+          sections[2].data.push(todo); // Today's tasks
+        } else if (todoDate > today && todoDate <= endOfWeek) {
+          sections[3].data.push(todo); // Upcoming Week section
         } else if (todoDate > endOfWeek) {
-          sections[4].data.push(todo);
+          sections[4].data.push(todo); // Scheduled section
         }
       });
 

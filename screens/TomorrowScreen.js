@@ -218,17 +218,33 @@ const TomorrowScreen = ({ tomorrowTaskUpdated }) => {
   
   // Load reminders for tomorrow from AsyncStorage
   useEffect(() => {
+    const setToMidnight = (date) => {
+      const newDate = new Date(date);
+      newDate.setHours(0, 0, 0, 0); // Normalize to midnight
+      return newDate;
+    };
+  
+    const getTomorrowMidnight = () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1); // Move to next day
+      return setToMidnight(tomorrow); // Normalize to midnight
+    };
+  
     const loadTomorrowReminders = async () => {
       const storedTodos = await AsyncStorage.getItem('todos');
-      const tomorrowDate = getTomorrowDate();
+      const tomorrowDate = getTomorrowMidnight(); // Get tomorrow's date normalized to midnight
+  
+      let tomorrowReminders = [];
+  
       if (storedTodos) {
         const todos = JSON.parse(storedTodos);
-        const tomorrowReminders = todos.filter(
-          (todo) => new Date(todo.date).toISOString().split('T')[0] === tomorrowDate
+        tomorrowReminders = todos.filter(
+          (todo) => setToMidnight(new Date(todo.date)).getTime() === tomorrowDate.getTime() // Compare dates without time
         );
-        setReminders(tomorrowReminders);
-        setIncompleteRemindersCount(tomorrowReminders.filter(reminder => !reminder.completed).length);
       }
+  
+      setReminders(tomorrowReminders); // Set reminders to only tomorrow's reminders
+      setIncompleteRemindersCount(tomorrowReminders.filter(reminder => !reminder.completed).length);
     };
   
     // Initial load of tomorrow's reminders
@@ -237,22 +253,21 @@ const TomorrowScreen = ({ tomorrowTaskUpdated }) => {
     const handleReminderUpdate = () => {
       loadTomorrowReminders(); // Reload reminders when an update occurs
     };
-  
     eventEmitter.on('reminderUpdated', handleReminderUpdate);
   
-    // Set interval to refresh reminders at midnight
-    const midnightCheck = setInterval(() => {
+    // Set interval to refresh reminders every minute, checking if it's a new day
+    const intervalId = setInterval(() => {
       const now = new Date();
       const isNewDay = now.getHours() === 0 && now.getMinutes() === 0;
       if (isNewDay) {
         loadTomorrowReminders(); // Load reminders for the new "tomorrow"
       }
-    }, 60000); // Check every minute
+    }, 60000);
   
     // Clean up interval and event listener when component unmounts
     return () => {
       eventEmitter.off('reminderUpdated', handleReminderUpdate);
-      clearInterval(midnightCheck);
+      clearInterval(intervalId);
     };
   }, []);
 

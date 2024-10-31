@@ -588,6 +588,9 @@ const filterTomorrowReminders = (reminders) => {
             style={[
               styles.remindersButton,
               { fontWeight: incompleteRemindersCount > 0 ? 'bold' : 'normal',
+                backgroundColor: incompleteRemindersCount > 0 ? '#FFDF00' : 'transparent',
+                paddingHorizontal: incompleteRemindersCount > 0 ? 4 : 0,
+                paddingVertical: incompleteRemindersCount > 0 ? 3 : 0,
                 fontSize: 18,
                 color: '#1E8AFF',
                } // Conditional font weight
@@ -665,14 +668,14 @@ const filterTomorrowReminders = (reminders) => {
       {isSelecting && selectedBlocks.length > 1 && (
         <View style={styles.selectionOptions}>
           <Button title="Merge" onPress={handleMerge} />
-          <Button title="Cancel" onPress={handleCancel} />
+          <Button title="Cancel" onPress={handleCancel} color="red"/>
         </View>
       )}
 
       {isSelecting && selectedBlocks.length === 1 && (
         <View style={styles.selectionOptions}>
           <Button title="Split" onPress={handleSplit} />
-          <Button title="Cancel" onPress={handleCancel} />
+          <Button title="Cancel" onPress={handleCancel} color="red"/>
         </View>
       )}
 

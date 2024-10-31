@@ -623,7 +623,7 @@ const handleSaveEdit = async () => {
         <TouchableOpacity onPress={() => setSettingsVisible(true)}>
           <Icon name="settings" size={30} color="#1E8AFF" />
         </TouchableOpacity>
-        <Button title="Reset" onPress={confirmReset} />
+        <Button title="Reset" onPress={confirmReset}/>
         <Button title="↺" onPress={handleUndo} disabled={history.length === 0} />
         <Button title="↻" onPress={handleRestore} disabled={future.length === 0} />
         <Button title={isSelecting ? "Cancel Select" : "Select"} onPress={toggleSelectMode} />
@@ -635,6 +635,9 @@ const handleSaveEdit = async () => {
             style={[
               styles.remindersButton,
               { fontWeight: incompleteRemindersCount > 0 ? 'bold' : 'normal',
+                backgroundColor: incompleteRemindersCount > 0 ? '#FFDF00' : 'transparent',
+                paddingHorizontal: incompleteRemindersCount > 0 ? 4 : 0,
+                paddingVertical: incompleteRemindersCount > 0 ? 3 : 0,
                 fontSize: 18,
                 color: '#1E8AFF',
                } // Conditional font weight
@@ -684,7 +687,7 @@ const handleSaveEdit = async () => {
               />
             </View>
             <Button title="Save Changes" onPress={handleSaveEdit} />
-            <Button title="Close" onPress={() => setEditModalVisible(false)} />
+            <Button title="Close" onPress={() => setEditModalVisible(false)} color="red"/>
           </View>
         </View>
       </Modal>
@@ -713,14 +716,14 @@ const handleSaveEdit = async () => {
       {isSelecting && selectedBlocks.length > 1 && (
         <View style={styles.selectionOptions}>
           <Button title="Merge" onPress={handleMerge} />
-          <Button title="Cancel" onPress={handleCancel} />
+          <Button title="Cancel" onPress={handleCancel} color="red"/>
         </View>
       )}
 
       {isSelecting && selectedBlocks.length === 1 && (
         <View style={styles.selectionOptions}>
           <Button title="Split" onPress={handleSplit} />
-          <Button title="Cancel" onPress={handleCancel} />
+          <Button title="Cancel" onPress={handleCancel} color="red"/>
         </View>
       )}
 

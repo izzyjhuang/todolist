@@ -199,7 +199,7 @@ const handleSaveSettings = () => {
     setSettingsVisible(false);
 };
 
-  const toggleSelectMode = () => {
+const toggleSelectMode = () => {
     setIsSelecting(!isSelecting);
     setSelectedBlocks([]);
   };
@@ -216,7 +216,7 @@ const handleSaveSettings = () => {
       const lastSelected = selectedBlocks[selectedBlocks.length - 1];
       const blockIndex = parseInt(block.id);
       const lastIndex = parseInt(lastSelected.id);
-
+  
       if (blockIndex > lastIndex) {
         const newSelection = blocks.slice(lastIndex, blockIndex + 1);
         setSelectedBlocks(newSelection);
@@ -375,8 +375,11 @@ const handleSaveSettings = () => {
       style={[
         styles.block,
         { backgroundColor: getPriorityColor(item.priority) },
+        selectedBlocks.find(block => block.id === item.id) ? styles.selectedBlock : null
       ]}
-      onPress={() => handleBlockPressEntryMode(item)}
+      onPress={() =>
+        isSelecting ? handleBlockPressSelectMode(item) : handleBlockPressEntryMode(item)
+      }
     >
       <Text style={styles.timeText}>{item.time}</Text>
       {item.title ? (
@@ -448,14 +451,14 @@ const handleSaveSettings = () => {
       {isSelecting && selectedBlocks.length > 1 && (
         <View style={styles.selectionOptions}>
           <Button title="Merge" onPress={handleMerge} />
-          <Button title="Cancel" onPress={handleCancel} />
+          <Button title="Cancel" onPress={handleCancel} color="red"/>
         </View>
       )}
 
       {isSelecting && selectedBlocks.length === 1 && (
         <View style={styles.selectionOptions}>
           <Button title="Split" onPress={handleSplit} />
-          <Button title="Cancel" onPress={handleCancel} />
+          <Button title="Cancel" onPress={handleCancel} color="red"/>
         </View>
       )}
 
@@ -623,6 +626,16 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     color: '#aaa',
+  },
+  selectionOptions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 10,
+  },
+  selectedBlock: {
+    borderColor: '#00f',
+    borderWidth: 2,
+    borderRadius: 10, // Rounds edges of the selected block
   },
 });
 

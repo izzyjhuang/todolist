@@ -228,9 +228,9 @@ const TodayScreen = ({ todayTaskUpdated }) => {
             <Text style={[styles.reminderDescription, item.completed && styles.completedText]}>{item.description}</Text>
           ) : null}
         </View>
-        {/* <Text style={[styles.reminderDate, item.completed && styles.completedText]}>
+        <Text style={[styles.reminderDate, item.completed && styles.completedText]}>
           {new Date(item.date).toLocaleDateString('en-US')}
-        </Text> */}
+        </Text>
       </TouchableOpacity>
     </Swipeable>
   );
@@ -243,28 +243,42 @@ const TodayScreen = ({ todayTaskUpdated }) => {
 
   // Load reminders for today from AsyncStorage
   useEffect(() => {
-  const loadTodayReminders = async () => {
-    const storedTodos = await AsyncStorage.getItem('todos');
-    const todayDate = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
-    if (storedTodos) {
-      const todos = JSON.parse(storedTodos);
-      const todayReminders = todos.filter(
-        (todo) => new Date(todo.date).toISOString().split('T')[0] === todayDate
-      );
-      setReminders(todayReminders);
+    const loadTodayReminders = async () => {
+      const storedTodos = await AsyncStorage.getItem('todos');
+      const todayDate = new Date().toISOString().split('T')[0]; // Ensure today's date is recalculated every time
+  
+      let todayReminders = [];
+  
+      if (storedTodos) {
+        const todos = JSON.parse(storedTodos);
+        todayReminders = todos.filter(
+          (todo) => new Date(todo.date).toISOString().split('T')[0] === todayDate
+        );
+      }
+  
+      setReminders(todayReminders); // Set reminders to only today's reminders
       setIncompleteRemindersCount(todayReminders.filter(reminder => !reminder.completed).length);
-    }
-  };
-
-  // Load today's reminders immediately on component mount
-  loadTodayReminders();
-
-  // Set an interval to reload reminders every minute to ensure they match today’s date
-  const intervalId = setInterval(loadTodayReminders, 60000); // Reload reminders every minute
-
-  // Clean up interval when component unmounts
-  return () => clearInterval(intervalId);
-}, []);
+    };
+  
+    loadTodayReminders(); // Initial load of today's reminders
+  
+    // Refresh reminders every minute
+    const intervalId = setInterval(() => {
+      loadTodayReminders();
+    }, 60000);
+  
+    // Set up event listener to update reminders when new ones are added
+    const handleReminderUpdate = () => {
+      loadTodayReminders(); // Reload reminders when an update occurs
+    };
+    eventEmitter.on('reminderUpdated', handleReminderUpdate);
+  
+    // Clean up interval and event listener on component unmount
+    return () => {
+      clearInterval(intervalId);
+      eventEmitter.off('reminderUpdated', handleReminderUpdate);
+    };
+  }, []);
 
   const toggleRemindersVisibility = () => {
     setIsRemindersVisible(!isRemindersVisible);

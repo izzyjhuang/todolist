@@ -231,7 +231,8 @@ const TomorrowScreen = ({ tomorrowTaskUpdated }) => {
       }
     };
   
-    loadTomorrowReminders(); // Initial load
+    // Initial load of tomorrow's reminders
+    loadTomorrowReminders();
   
     const handleReminderUpdate = () => {
       loadTomorrowReminders(); // Reload reminders when an update occurs
@@ -239,9 +240,19 @@ const TomorrowScreen = ({ tomorrowTaskUpdated }) => {
   
     eventEmitter.on('reminderUpdated', handleReminderUpdate);
   
-    // Clean up the listener when the component is unmounted
+    // Set interval to refresh reminders at midnight
+    const midnightCheck = setInterval(() => {
+      const now = new Date();
+      const isNewDay = now.getHours() === 0 && now.getMinutes() === 0;
+      if (isNewDay) {
+        loadTomorrowReminders(); // Load reminders for the new "tomorrow"
+      }
+    }, 60000); // Check every minute
+  
+    // Clean up interval and event listener when component unmounts
     return () => {
       eventEmitter.off('reminderUpdated', handleReminderUpdate);
+      clearInterval(midnightCheck);
     };
   }, []);
 

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { View, Text, SectionList, Modal, TextInput, TouchableOpacity, StyleSheet, Button } from 'react-native';
+import React, { useState, useEffect, useRef } from 'react';
+import { Animated, View, Text, SectionList, Modal, TextInput, TouchableOpacity, StyleSheet, Button } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -237,26 +237,61 @@ const RemindersScreen = () => {
   eventEmitter.emit('reminderUpdated'); // Emit event for sync with TodayScreen
 };
 
-  const renderRightActions = (id) => (
-    <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteTodo(id)}>
-      <Text style={styles.deleteButtonText}>Delete</Text>
-    </TouchableOpacity>
+
+const swipeableRef = useRef(null); // Add this ref to manage the Swipeable component
+
+const pushToTomorrow = async (id) => {
+  saveHistory(); // Save history for undo functionality
+
+  const updatedTodos = todos.map(todo => 
+    todo.id === id 
+      ? { ...todo, date: new Date(new Date(todo.date).getTime() + 24 * 60 * 60 * 1000) } // Add one day to the date
+      : todo
   );
 
-  const renderTodo = ({ item, index }) => (
-    <Swipeable renderRightActions={() => renderRightActions(item.id)}>
+  await saveTodos(updatedTodos); // Save updated todos to AsyncStorage
+  eventEmitter.emit('reminderUpdated'); // Emit event for sync with TodayScreen
+  
+  // Close the swipeable row after updating
+  if (swipeableRef.current) {
+    swipeableRef.current.close();
+  }
+};
+
+const renderLeftActions = (id) => (
+  <View style={{ flexDirection: 'row' }}>
+    <TouchableOpacity style={styles.nextDayButton} onPress={() => pushToTomorrow(id)}>
+      <Text style={styles.actionText}>Next Day</Text>
+    </TouchableOpacity>
+  </View>
+);
+
+const renderRightActions = (id) => (
+  <View style={{ flexDirection: 'row' }}>
+    <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteTodo(id)}>
+      <Text style={styles.actionText}>Delete</Text>
+    </TouchableOpacity>
+  </View>
+);
+
+const renderTodo = ({ item }) => (
+    <Swipeable 
+      ref={swipeableRef} // Set the reference here
+      renderLeftActions={() => renderLeftActions(item.id)}
+      renderRightActions={() => renderRightActions(item.id)}
+    >
       <TouchableOpacity onPress={() => handleEditTodo(item.id)} style={styles.todoItem}>
         <TouchableOpacity onPress={() => toggleComplete(item.id)}>
-            <Icon name={item.completed ? "check-circle" : "radio-button-unchecked"} size={24} color={item.completed ? "green" : "gray"} />
+          <Icon name={item.completed ? "check-circle" : "radio-button-unchecked"} size={24} color={item.completed ? "green" : "gray"} />
         </TouchableOpacity>
         <View style={styles.todoTextContainer}>
-            <Text style={[styles.todoText, item.completed && styles.completedText]}>{item.title}</Text>
-            {item.description ? (
+          <Text style={[styles.todoText, item.completed && styles.completedText]}>{item.title}</Text>
+          {item.description ? (
             <Text style={[styles.descriptionText, item.completed && styles.completedText]}>{item.description}</Text>
-            ) : null}
+          ) : null}
         </View>
         <Text style={[styles.dateText, item.completed && styles.completedText]}>{new Date(item.date).toLocaleDateString('en-US')}</Text>
-        </TouchableOpacity>
+      </TouchableOpacity>
     </Swipeable>
   );
 
@@ -442,8 +477,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: 80,
     height: '100%',
+    borderRadius: 5,
   },
   deleteButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  nextDayButton: {
+    backgroundColor: 'orange',
+    justifyContent: 'center',
+    alignItems: 'center',
+    width: 80,
+    borderRadius: 5,
+    height: '100%',
+  },
+  actionText: {
     color: 'white',
     fontWeight: 'bold',
   },

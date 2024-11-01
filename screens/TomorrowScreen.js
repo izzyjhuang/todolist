@@ -67,6 +67,19 @@ const generateTimeBlocks = (interval = 15, dayStart = '6:00', dayEnd = '23:00') 
   return blocks;
 };
 
+const sortAndUpdateBlockIds = (blocks) => {
+  blocks.sort((a, b) => {
+    const [aStartHour, aStartMinute] = a.time.split('-')[0].split(':').map(Number);
+    const [bStartHour, bStartMinute] = b.time.split('-')[0].split(':').map(Number);
+    return (aStartHour * 60 + aStartMinute) - (bStartHour * 60 + bStartMinute);
+  });
+
+  return blocks.map((block, index) => ({
+    ...block,
+    id: index.toString(),
+  }));
+};
+
 const TomorrowScreen = ({ tomorrowTaskUpdated }) => {
   const { customPriorities, setCustomPriorities } = usePriorities();
   const [dayStart, setDayStart] = useState('6:00');
@@ -74,7 +87,8 @@ const TomorrowScreen = ({ tomorrowTaskUpdated }) => {
   const [blocks, setBlocks] = useState(generateTimeBlocks());
   const [selectedBlocks, setSelectedBlocks] = useState([]);
   const [editModalVisible, setEditModalVisible] = useState(false);
-  const [addTaskModalVisible, setAddTaskModalVisible] = useState(false);    const [settingsVisible, setSettingsVisible] = useState(false);
+  const [addTaskModalVisible, setAddTaskModalVisible] = useState(false);    
+  const [settingsVisible, setSettingsVisible] = useState(false);
   const [isSelecting, setIsSelecting] = useState(false);
   const [entryBlock, setEntryBlock] = useState(null);
   const [history, setHistory] = useState([]);
@@ -118,76 +132,78 @@ const TomorrowScreen = ({ tomorrowTaskUpdated }) => {
     const [endHour, endMinute] = newDayEnd.split(':').map(Number);
   
     const newStartTotalMinutes = startHour * 60 + startMinute;
-    const newEndTotalMinutes = (endHour === 0 ? 24 : endHour) * 60 + endMinute;
-  
-    const currentStartTotalMinutes = parseInt(blocks[0].time.split('-')[0].split(':')[0]) * 60 
-                                      + parseInt(blocks[0].time.split('-')[0].split(':')[1]);
-    const currentEndTotalMinutes = parseInt(blocks[blocks.length - 1].time.split('-')[1].split(':')[0]) * 60 
-                                      + parseInt(blocks[blocks.length - 1].time.split('-')[1].split(':')[1]);
+    const newEndTotalMinutes = (endHour === 0 ? 24 * 60 : endHour * 60) + endMinute;
   
     let updatedBlocks = [...blocks];
   
     // Add blocks at the beginning if newDayStart is earlier than the current start
-    if (newStartTotalMinutes < currentStartTotalMinutes) {
+    if (newStartTotalMinutes < getTimeInMinutes(updatedBlocks[0].time.split('-')[0])) {
       let currentMinutes = newStartTotalMinutes;
-      while (currentMinutes < currentStartTotalMinutes) {
-        const startHour = Math.floor(currentMinutes / 60);
-        const startMinute = currentMinutes % 60;
-        const startTime = `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
-  
+      const newBlocks = [];
+      while (currentMinutes < getTimeInMinutes(updatedBlocks[0].time.split('-')[0])) {
+        const startTime = formatTime(currentMinutes);
         currentMinutes += timeInterval;
-        const endHour = Math.floor(currentMinutes / 60);
-        const endMinute = currentMinutes % 60;
-        const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+        const endTime = formatTime(currentMinutes);
   
-        updatedBlocks.unshift({ id: `${Date.now()}-${currentMinutes}`, time: `${startTime}-${endTime}`, title: '', description: '', priority: 'none' });
+        newBlocks.push({
+          id: '', // Temporary ID
+          time: `${startTime}-${endTime}`,
+          title: '',
+          description: '',
+          priority: 'none',
+        });
       }
+      updatedBlocks = [...newBlocks, ...updatedBlocks];
     }
   
     // Remove blocks at the beginning if newDayStart is later than the current start
-    if (newStartTotalMinutes > currentStartTotalMinutes) {
+    if (newStartTotalMinutes > getTimeInMinutes(updatedBlocks[0].time.split('-')[0])) {
       updatedBlocks = updatedBlocks.filter((block) => {
-        const blockStartMinutes = parseInt(block.time.split('-')[0].split(':')[0]) * 60 + parseInt(block.time.split('-')[0].split(':')[1]);
+        const blockStartMinutes = getTimeInMinutes(block.time.split('-')[0]);
         return blockStartMinutes >= newStartTotalMinutes;
       });
     }
   
     // Add blocks at the end if newDayEnd is later than the current end
-    if (newEndTotalMinutes > currentEndTotalMinutes) {
-      let currentMinutes = currentEndTotalMinutes;
+    if (newEndTotalMinutes > getTimeInMinutes(updatedBlocks[updatedBlocks.length - 1].time.split('-')[1])) {
+      let currentMinutes = getTimeInMinutes(updatedBlocks[updatedBlocks.length - 1].time.split('-')[1]);
+      const newBlocks = [];
       while (currentMinutes < newEndTotalMinutes) {
-        const startHour = Math.floor(currentMinutes / 60);
-        const startMinute = currentMinutes % 60;
-        const startTime = `${startHour.toString().padStart(2, '0')}:${startMinute.toString().padStart(2, '0')}`;
-  
+        const startTime = formatTime(currentMinutes);
         currentMinutes += timeInterval;
-        let endHour = Math.floor(currentMinutes / 60);
-        if (endHour === 24) endHour = 0;
-        const endMinute = currentMinutes % 60;
-        const endTime = `${endHour.toString().padStart(2, '0')}:${endMinute.toString().padStart(2, '0')}`;
+        const endTime = formatTime(currentMinutes);
   
-        updatedBlocks.push({ id: `${Date.now()}-${currentMinutes}`, time: `${startTime}-${endTime}`, title: '', description: '', priority: 'none' });
+        newBlocks.push({
+          id: '', // Temporary ID
+          time: `${startTime}-${endTime}`,
+          title: '',
+          description: '',
+          priority: 'none',
+        });
       }
+      updatedBlocks = [...updatedBlocks, ...newBlocks];
     }
   
     // Remove blocks at the end if newDayEnd is earlier than the current end
-    if (newEndTotalMinutes < currentEndTotalMinutes) {
+    if (newEndTotalMinutes < getTimeInMinutes(updatedBlocks[updatedBlocks.length - 1].time.split('-')[1])) {
       updatedBlocks = updatedBlocks.filter((block) => {
-        const blockEndMinutes = parseInt(block.time.split('-')[1].split(':')[0]) * 60 + parseInt(block.time.split('-')[1].split(':')[1]);
+        const blockEndMinutes = getTimeInMinutes(block.time.split('-')[1]);
         return blockEndMinutes <= newEndTotalMinutes;
       });
     }
   
-    // Sort blocks by start time to ensure correct chronological order
-    updatedBlocks.sort((a, b) => {
-      const [aStartHour, aStartMinute] = a.time.split('-')[0].split(':').map(Number);
-      const [bStartHour, bStartMinute] = b.time.split('-')[0].split(':').map(Number);
-      return (aStartHour * 60 + aStartMinute) - (bStartHour * 60 + bStartMinute);
-    });
+    // Reassign IDs to all blocks based on their final order
+    updatedBlocks = sortAndUpdateBlockIds(updatedBlocks);
   
     setBlocks(updatedBlocks);
     setDayStart(newDayStart);
     setDayEnd(newDayEnd);
+  };
+
+  const formatTime = (minutes) => {
+    const hour = Math.floor(minutes / 60);
+    const minute = minutes % 60;
+    return `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
   };
 
   const renderReminderItem = ({ item }) => (
@@ -218,30 +234,56 @@ const TomorrowScreen = ({ tomorrowTaskUpdated }) => {
   
   // Load reminders for tomorrow from AsyncStorage
   useEffect(() => {
-    const loadTomorrowReminders = async () => {
-      const storedTodos = await AsyncStorage.getItem('todos');
-      const tomorrowDate = getTomorrowDate();
-      if (storedTodos) {
-        const todos = JSON.parse(storedTodos);
-        const tomorrowReminders = todos.filter(
-          (todo) => new Date(todo.date).toISOString().split('T')[0] === tomorrowDate
-        );
-        setReminders(tomorrowReminders);
-        setIncompleteRemindersCount(tomorrowReminders.filter(reminder => !reminder.completed).length);
-      }
+    const setToMidnight = (date) => {
+      const newDate = new Date(date);
+      newDate.setHours(0, 0, 0, 0); // Normalize to midnight
+      return newDate;
     };
   
-    loadTomorrowReminders(); // Initial load
+    const getTomorrowMidnight = () => {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1); // Move to next day
+      return setToMidnight(tomorrow); // Normalize to midnight
+    };
+  
+    const loadTomorrowReminders = async () => {
+      const storedTodos = await AsyncStorage.getItem('todos');
+      const tomorrowDate = getTomorrowMidnight(); // Get tomorrow's date normalized to midnight
+  
+      let tomorrowReminders = [];
+  
+      if (storedTodos) {
+        const todos = JSON.parse(storedTodos);
+        tomorrowReminders = todos.filter(
+          (todo) => setToMidnight(new Date(todo.date)).getTime() === tomorrowDate.getTime() // Compare dates without time
+        );
+      }
+  
+      setReminders(tomorrowReminders); // Set reminders to only tomorrow's reminders
+      setIncompleteRemindersCount(tomorrowReminders.filter(reminder => !reminder.completed).length);
+    };
+  
+    // Initial load of tomorrow's reminders
+    loadTomorrowReminders();
   
     const handleReminderUpdate = () => {
       loadTomorrowReminders(); // Reload reminders when an update occurs
     };
-  
     eventEmitter.on('reminderUpdated', handleReminderUpdate);
   
-    // Clean up the listener when the component is unmounted
+    // Set interval to refresh reminders every minute, checking if it's a new day
+    const intervalId = setInterval(() => {
+      const now = new Date();
+      const isNewDay = now.getHours() === 0 && now.getMinutes() === 0;
+      if (isNewDay) {
+        loadTomorrowReminders(); // Load reminders for the new "tomorrow"
+      }
+    }, 60000);
+  
+    // Clean up interval and event listener when component unmounts
     return () => {
       eventEmitter.off('reminderUpdated', handleReminderUpdate);
+      clearInterval(intervalId);
     };
   }, []);
 
@@ -287,7 +329,7 @@ const handleSaveEdit = async () => {
   // Filter to show only tomorrow’s reminders
   filterTomorrowReminders(updatedReminders); 
   
-  // Emit an event to notify AllTodosScreen of the update
+  // Emit an event to notify RemindersScreen of the update
   eventEmitter.emit('reminderUpdated');
   
   // Close the edit modal and reset state
@@ -395,79 +437,101 @@ const filterTomorrowReminders = (reminders) => {
     setAddTaskModalVisible(true);
 };
 
-  const handleBlockPressSelectMode = (block) => {
-    if (selectedBlocks.length === 0) {
-      setSelectedBlocks([block]);
+const handleBlockPressSelectMode = (block) => {
+  const blockIndex = parseInt(block.id);
+
+  if (selectedBlocks.length === 0) {
+    // Start a new selection if no blocks are selected
+    setSelectedBlocks([block]);
+  } else {
+    const firstSelectedIndex = parseInt(selectedBlocks[0].id);
+    const lastSelectedIndex = parseInt(selectedBlocks[selectedBlocks.length - 1].id);
+
+    if (blockIndex > lastSelectedIndex) {
+      // If the new block is after the last selected, extend the selection forward
+      const newSelection = blocks.slice(firstSelectedIndex, blockIndex + 1);
+      setSelectedBlocks(newSelection);
+    } else if (blockIndex < firstSelectedIndex) {
+      // If the new block is before the first selected, extend the selection backward
+      const newSelection = blocks.slice(blockIndex, lastSelectedIndex + 1);
+      setSelectedBlocks(newSelection);
     } else {
-      const lastSelected = selectedBlocks[selectedBlocks.length - 1];
-      const blockIndex = parseInt(block.id);
-      const lastIndex = parseInt(lastSelected.id);
-
-      if (blockIndex > lastIndex) {
-        const newSelection = blocks.slice(lastIndex, blockIndex + 1);
-        setSelectedBlocks(newSelection);
-      } else {
-        const newSelection = blocks.slice(blockIndex, lastIndex + 1);
-        setSelectedBlocks(newSelection);
-      }
+      // If the block is within the current selection, reduce the selection up to the clicked block
+      const newSelection = selectedBlocks.filter(b => parseInt(b.id) <= blockIndex);
+      setSelectedBlocks(newSelection);
     }
-  };
+  }
+};
 
-  const handleSplit = () => {
-    if (selectedBlocks.length === 1) {
-      saveHistory();
+const handleSplit = () => {
+  if (selectedBlocks.length === 1) {
+    saveHistory();
 
-      const block = selectedBlocks[0];
-      const [startTime, endTime] = block.time.split('-');
-      let [startHour, startMinute] = startTime.split(':').map(Number);
-      let [endHour, endMinute] = endTime.split(':').map(Number);
+    const block = selectedBlocks[0];
+    const [startTime, endTime] = block.time.split('-');
+    let [startHour, startMinute] = startTime.split(':').map(Number);
+    let [endHour, endMinute] = endTime.split(':').map(Number);
 
-      const startTotalMinutes = startHour * 60 + startMinute;
-      const endTotalMinutes = endHour * 60 + endMinute;
-      const totalMinutes = endTotalMinutes - startTotalMinutes;
+    const startTotalMinutes = startHour * 60 + startMinute;
+    const endTotalMinutes = endHour * 60 + endMinute;
+    const totalMinutes = endTotalMinutes - startTotalMinutes;
 
-      const numBlocks = totalMinutes / 5;
+    let numBlocks;
+    let splitInterval;
 
-      const newBlocks = [];
-
-      for (let i = 0; i < numBlocks; i++) {
-        const newStartTime = `${startHour.toString().padStart(2, '0')}:${startMinute
-          .toString()
-          .padStart(2, '0')}`;
-        startMinute += 5;
-        if (startMinute === 60) {
-          startMinute = 0;
-          startHour += 1;
-        }
-        const newEndTime = `${startHour.toString().padStart(2, '0')}:${startMinute
-          .toString()
-          .padStart(2, '0')}`;
-
-        newBlocks.push({
-          id: `${block.id}-${i}`,
-          time: `${newStartTime}-${newEndTime}`,
-          title: '',
-          description: '',
-          priority: 'none',
-        });
-      }
-
-      const updatedBlocks = [
-        ...blocks.slice(0, parseInt(block.id)),
-        ...newBlocks,
-        ...blocks.slice(parseInt(block.id) + 1),
-      ];
-
-      const reassignedBlocks = updatedBlocks.map((block, index) => ({
-        ...block,
-        id: index.toString(),
-      }));
-
-      setBlocks(reassignedBlocks);
-      setSelectedBlocks([]);
-      setIsSelecting(false);
+    // Determine split interval and number of blocks
+    if (totalMinutes === timeInterval) {
+      splitInterval = 5; // Split 15-minute blocks into 5-minute intervals
+      numBlocks = timeInterval / 5;
+    } else if (totalMinutes % timeInterval === 0) {
+      splitInterval = timeInterval; // Split into blocks of the interval size
+      numBlocks = totalMinutes / timeInterval;
+    } else {
+      splitInterval = 5; // For other cases, default to 5-minute splits
+      numBlocks = Math.floor(totalMinutes / splitInterval);
     }
-  };
+
+    const newBlocks = [];
+
+    for (let i = 0; i < numBlocks; i++) {
+      const newStartTime = `${startHour.toString().padStart(2, '0')}:${startMinute
+        .toString()
+        .padStart(2, '0')}`;
+
+      startMinute += splitInterval;
+      if (startMinute >= 60) {
+        startMinute -= 60;
+        startHour += 1;
+      }
+      const newEndTime = `${startHour.toString().padStart(2, '0')}:${startMinute
+        .toString()
+        .padStart(2, '0')}`;
+
+      newBlocks.push({
+        id: `${block.id}-${i}`,
+        time: `${newStartTime}-${newEndTime}`,
+        title: '',
+        description: '',
+        priority: 'none',
+      });
+    }
+
+    const updatedBlocks = [
+      ...blocks.slice(0, parseInt(block.id)),
+      ...newBlocks,
+      ...blocks.slice(parseInt(block.id) + 1),
+    ];
+
+    const reassignedBlocks = updatedBlocks.map((block, index) => ({
+      ...block,
+      id: index.toString(),
+    }));
+
+    setBlocks(reassignedBlocks);
+    setSelectedBlocks([]);
+    setIsSelecting(false);
+  }
+};
 
   const handleReset = () => {
     saveHistory(); // Save the current state before resetting
@@ -526,7 +590,8 @@ const filterTomorrowReminders = (reminders) => {
   };
 
   const handleCancel = () => {
-    setSelectedBlocks([]);
+    setSelectedBlocks([]); // Clear any selected blocks
+    setIsSelecting(false); // Exit select mode and return to entry mode
   };
 
   const getPriorityColor = (priority) => {
@@ -654,14 +719,14 @@ const filterTomorrowReminders = (reminders) => {
       {isSelecting && selectedBlocks.length > 1 && (
         <View style={styles.selectionOptions}>
           <Button title="Merge" onPress={handleMerge} />
-          <Button title="Cancel" onPress={handleCancel} />
+          <Button title="Cancel" onPress={handleCancel} color="red"/>
         </View>
       )}
 
       {isSelecting && selectedBlocks.length === 1 && (
         <View style={styles.selectionOptions}>
           <Button title="Split" onPress={handleSplit} />
-          <Button title="Cancel" onPress={handleCancel} />
+          <Button title="Cancel" onPress={handleCancel} color="red"/>
         </View>
       )}
 

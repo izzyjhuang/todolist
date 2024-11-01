@@ -13,7 +13,7 @@ import TodayScreen from './screens/TodayScreen';
 import TomorrowScreen from './screens/TomorrowScreen';
 import DateIcon from './components/DateIcon';
 import RoutineScreen from './screens/RoutineScreen';
-import AllTodosScreen from './screens/AllTodosScreen';
+import RemindersScreen from './screens/ReminderScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -64,7 +64,7 @@ useEffect(() => {
     }
   };
 
-  const moveInterval = setInterval(checkMoveTasks, 60000); // Check every minute
+  const moveInterval = setInterval(checkMoveTasks, 2000); // Check every minute
   return () => clearInterval(moveInterval); // Cleanup on unmount
 }, [moveTasksToToday]);
 
@@ -77,7 +77,7 @@ useEffect(() => {
     }
   };
 
-  const routineInterval = setInterval(checkLoadRoutine, 60000); // Check every minute
+  const routineInterval = setInterval(checkLoadRoutine, 2000); // Check every minute
   return () => clearInterval(routineInterval); // Cleanup on unmount
 }, [loadRoutineForTomorrow]);
 
@@ -113,7 +113,7 @@ useEffect(() => {
             <Tab.Screen name="Tomorrow">
               {(props) => <TomorrowScreen {...props} tomorrowTaskUpdated={tomorrowTaskUpdated} />}
             </Tab.Screen>
-            <Tab.Screen name="Reminders" component={AllTodosScreen} />
+            <Tab.Screen name="Reminders" component={RemindersScreen} />
             <Tab.Screen name="Routine" component={RoutineScreen} />
           </Tab.Navigator>
         </NavigationContainer>

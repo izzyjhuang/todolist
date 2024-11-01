@@ -216,7 +216,7 @@ const SettingsModal = ({
           <ScrollView contentContainerStyle={styles.scrollViewContent}>
             <Text style={styles.header}>Settings</Text>
 
-            <Text style={styles.subHeader}>Time Zone:</Text>
+            {/* <Text style={styles.subHeader}>Time Zone:</Text>
             <TouchableOpacity
               style={styles.intervalButton}
               onPress={() => setTimeZoneVisible((prev) => !prev)}
@@ -225,7 +225,7 @@ const SettingsModal = ({
                 {timeZoneList.find((tz) => tz.value === selectedTimeZone)?.label}
               </Text>
             </TouchableOpacity>
-            {timeZoneVisible && renderTimeZoneOptions()}
+            {timeZoneVisible && renderTimeZoneOptions()} */}
 
             <Text style={styles.subHeader}>Schedule Interval:</Text>
             <TouchableOpacity

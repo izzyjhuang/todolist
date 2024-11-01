@@ -8,7 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 import 'react-native-get-random-values';
 import eventEmitter from '../components/EventEmitter';
 
-const AllTodosScreen = () => {
+const RemindersScreen = () => {
   const [todos, setTodos] = useState([]);
   const [modalVisible, setModalVisible] = useState(false);
   const [newTitle, setNewTitle] = useState('');
@@ -156,29 +156,38 @@ const AllTodosScreen = () => {
     const now = new Date();
     const todayDate = now.toDateString();
     const endOfWeek = new Date(now);
-    endOfWeek.setDate(now.getDate() + 7);
+    endOfWeek.setDate(now.getDate() + 6);
 
     const sections = [
         { title: 'Archived ', data: [], collapsible: true }, // Add Archived section
         { title: 'Past Due', data: [] },
         { title: 'Today', data: [] },
-        { title: 'This Week', data: [] },
+        { title: 'Upcoming Week', data: [] },
         { title: 'Scheduled', data: [] },
       ];
   
 
+      const setToMidnight = (date) => {
+        const newDate = new Date(date);
+        newDate.setHours(0, 0, 0, 0); // Set time to midnight
+        return newDate;
+      };
+      
+      const today = setToMidnight(new Date());
+      
       todos.forEach(todo => {
-        const todoDate = new Date(todo.date);
-        if (todo.completed && todoDate < now) {
-          sections[0].data.push(todo); // Add to Archived if completed and past due
-        } else if (todoDate < now && todoDate.toDateString() !== todayDate) {
-          sections[1].data.push(todo);
-        } else if (todoDate.toDateString() === todayDate) {
-          sections[2].data.push(todo);
-        } else if (todoDate > now && todoDate <= endOfWeek) {
-          sections[3].data.push(todo);
+        const todoDate = setToMidnight(new Date(todo.date));
+      
+        if (todo.completed && todoDate < today) {
+          sections[0].data.push(todo); // Add to Archived if completed and in the past
+        } else if (todoDate < today) {
+          sections[1].data.push(todo); // Past Due section
+        } else if (todoDate.getTime() === today.getTime()) {
+          sections[2].data.push(todo); // Today's tasks
+        } else if (todoDate > today && todoDate <= endOfWeek) {
+          sections[3].data.push(todo); // Upcoming Week section
         } else if (todoDate > endOfWeek) {
-          sections[4].data.push(todo);
+          sections[4].data.push(todo); // Scheduled section
         }
       });
 
@@ -450,4 +459,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default AllTodosScreen;
+export default RemindersScreen;

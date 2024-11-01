@@ -243,29 +243,45 @@ const TodayScreen = ({ todayTaskUpdated }) => {
 
   // Load reminders for today from AsyncStorage
   useEffect(() => {
-    const loadTodayReminders = async () => {
-      const storedTodos = await AsyncStorage.getItem('todos');
-      const todayDate = new Date().toISOString().split('T')[0]; // Format: YYYY-MM-DD
-      if (storedTodos) {
-        const todos = JSON.parse(storedTodos);
-        const todayReminders = todos.filter(
-          (todo) => new Date(todo.date).toISOString().split('T')[0] === todayDate
-        );
-        setReminders(todayReminders);
-        setIncompleteRemindersCount(todayReminders.filter(reminder => !reminder.completed).length);
-      }
+    const setToMidnight = (date) => {
+      const newDate = new Date(date);
+      newDate.setHours(0, 0, 0, 0); // Normalize to midnight
+      return newDate;
     };
   
-    loadTodayReminders();
+    const loadTodayReminders = async () => {
+      const storedTodos = await AsyncStorage.getItem('todos');
+      const todayDate = setToMidnight(new Date()); // Normalize today's date to midnight
   
+      let todayReminders = [];
+  
+      if (storedTodos) {
+        const todos = JSON.parse(storedTodos);
+        todayReminders = todos.filter(
+          (todo) => setToMidnight(new Date(todo.date)).getTime() === todayDate.getTime() // Compare dates without time
+        );
+      }
+  
+      setReminders(todayReminders); // Set reminders to only today's reminders
+      setIncompleteRemindersCount(todayReminders.filter(reminder => !reminder.completed).length);
+    };
+  
+    loadTodayReminders(); // Initial load of today's reminders
+  
+    // Refresh reminders every minute
+    const intervalId = setInterval(() => {
+      loadTodayReminders();
+    }, 60000);
+  
+    // Set up event listener to update reminders when new ones are added
     const handleReminderUpdate = () => {
       loadTodayReminders(); // Reload reminders when an update occurs
     };
-  
     eventEmitter.on('reminderUpdated', handleReminderUpdate);
   
-    // Clean up the listener when the component is unmounted
+    // Clean up interval and event listener on component unmount
     return () => {
+      clearInterval(intervalId);
       eventEmitter.off('reminderUpdated', handleReminderUpdate);
     };
   }, []);
@@ -313,7 +329,7 @@ const handleSaveEdit = async () => {
   // Filter to show only today’s reminders
   filterTodayReminders(updatedReminders); 
   
-  // Emit an event to notify AllTodosScreen of the update
+  // Emit an event to notify RemindersScreen of the update
   eventEmitter.emit('reminderUpdated');
   
   // Close the edit modal and reset state
@@ -442,79 +458,101 @@ const handleSaveEdit = async () => {
     setAddTaskModalVisible(true);
 };
 
-  const handleBlockPressSelectMode = (block) => {
-    if (selectedBlocks.length === 0) {
-      setSelectedBlocks([block]);
+const handleBlockPressSelectMode = (block) => {
+  const blockIndex = parseInt(block.id);
+
+  if (selectedBlocks.length === 0) {
+    // Start a new selection if no blocks are selected
+    setSelectedBlocks([block]);
+  } else {
+    const firstSelectedIndex = parseInt(selectedBlocks[0].id);
+    const lastSelectedIndex = parseInt(selectedBlocks[selectedBlocks.length - 1].id);
+
+    if (blockIndex > lastSelectedIndex) {
+      // If the new block is after the last selected, extend the selection forward
+      const newSelection = blocks.slice(firstSelectedIndex, blockIndex + 1);
+      setSelectedBlocks(newSelection);
+    } else if (blockIndex < firstSelectedIndex) {
+      // If the new block is before the first selected, extend the selection backward
+      const newSelection = blocks.slice(blockIndex, lastSelectedIndex + 1);
+      setSelectedBlocks(newSelection);
     } else {
-      const lastSelected = selectedBlocks[selectedBlocks.length - 1];
-      const blockIndex = parseInt(block.id);
-      const lastIndex = parseInt(lastSelected.id);
-
-      if (blockIndex > lastIndex) {
-        const newSelection = blocks.slice(lastIndex, blockIndex + 1);
-        setSelectedBlocks(newSelection);
-      } else {
-        const newSelection = blocks.slice(blockIndex, lastIndex + 1);
-        setSelectedBlocks(newSelection);
-      }
+      // If the block is within the current selection, reduce the selection up to the clicked block
+      const newSelection = selectedBlocks.filter(b => parseInt(b.id) <= blockIndex);
+      setSelectedBlocks(newSelection);
     }
-  };
+  }
+};
 
-  const handleSplit = () => {
-    if (selectedBlocks.length === 1) {
-      saveHistory();
+const handleSplit = () => {
+  if (selectedBlocks.length === 1) {
+    saveHistory();
 
-      const block = selectedBlocks[0];
-      const [startTime, endTime] = block.time.split('-');
-      let [startHour, startMinute] = startTime.split(':').map(Number);
-      let [endHour, endMinute] = endTime.split(':').map(Number);
+    const block = selectedBlocks[0];
+    const [startTime, endTime] = block.time.split('-');
+    let [startHour, startMinute] = startTime.split(':').map(Number);
+    let [endHour, endMinute] = endTime.split(':').map(Number);
 
-      const startTotalMinutes = startHour * 60 + startMinute;
-      const endTotalMinutes = endHour * 60 + endMinute;
-      const totalMinutes = endTotalMinutes - startTotalMinutes;
+    const startTotalMinutes = startHour * 60 + startMinute;
+    const endTotalMinutes = endHour * 60 + endMinute;
+    const totalMinutes = endTotalMinutes - startTotalMinutes;
 
-      const numBlocks = totalMinutes / 5;
+    let numBlocks;
+    let splitInterval;
 
-      const newBlocks = [];
-
-      for (let i = 0; i < numBlocks; i++) {
-        const newStartTime = `${startHour.toString().padStart(2, '0')}:${startMinute
-          .toString()
-          .padStart(2, '0')}`;
-        startMinute += 5;
-        if (startMinute === 60) {
-          startMinute = 0;
-          startHour += 1;
-        }
-        const newEndTime = `${startHour.toString().padStart(2, '0')}:${startMinute
-          .toString()
-          .padStart(2, '0')}`;
-
-        newBlocks.push({
-          id: `${block.id}-${i}`,
-          time: `${newStartTime}-${newEndTime}`,
-          title: '',
-          description: '',
-          priority: 'none',
-        });
-      }
-
-      const updatedBlocks = [
-        ...blocks.slice(0, parseInt(block.id)),
-        ...newBlocks,
-        ...blocks.slice(parseInt(block.id) + 1),
-      ];
-
-      const reassignedBlocks = updatedBlocks.map((block, index) => ({
-        ...block,
-        id: index.toString(),
-      }));
-
-      setBlocks(reassignedBlocks);
-      setSelectedBlocks([]);
-      setIsSelecting(false);
+    // Determine split interval and number of blocks
+    if (totalMinutes === timeInterval) {
+      splitInterval = 5; // Split 15-minute blocks into 5-minute intervals
+      numBlocks = timeInterval / 5;
+    } else if (totalMinutes % timeInterval === 0) {
+      splitInterval = timeInterval; // Split into blocks of the interval size
+      numBlocks = totalMinutes / timeInterval;
+    } else {
+      splitInterval = 5; // For other cases, default to 5-minute splits
+      numBlocks = Math.floor(totalMinutes / splitInterval);
     }
-  };
+
+    const newBlocks = [];
+
+    for (let i = 0; i < numBlocks; i++) {
+      const newStartTime = `${startHour.toString().padStart(2, '0')}:${startMinute
+        .toString()
+        .padStart(2, '0')}`;
+
+      startMinute += splitInterval;
+      if (startMinute >= 60) {
+        startMinute -= 60;
+        startHour += 1;
+      }
+      const newEndTime = `${startHour.toString().padStart(2, '0')}:${startMinute
+        .toString()
+        .padStart(2, '0')}`;
+
+      newBlocks.push({
+        id: `${block.id}-${i}`,
+        time: `${newStartTime}-${newEndTime}`,
+        title: '',
+        description: '',
+        priority: 'none',
+      });
+    }
+
+    const updatedBlocks = [
+      ...blocks.slice(0, parseInt(block.id)),
+      ...newBlocks,
+      ...blocks.slice(parseInt(block.id) + 1),
+    ];
+
+    const reassignedBlocks = updatedBlocks.map((block, index) => ({
+      ...block,
+      id: index.toString(),
+    }));
+
+    setBlocks(reassignedBlocks);
+    setSelectedBlocks([]);
+    setIsSelecting(false);
+  }
+};
 
   const handleReset = () => {
     saveHistory(); // Save the current state before resetting
@@ -567,7 +605,8 @@ const handleSaveEdit = async () => {
   };
 
   const handleCancel = () => {
-    setSelectedBlocks([]);
+    setSelectedBlocks([]); // Clear any selected blocks
+    setIsSelecting(false); // Exit select mode and return to entry mode
   };
 
   const getPriorityColor = (priority) => {
@@ -612,7 +651,7 @@ const handleSaveEdit = async () => {
         <TouchableOpacity onPress={() => setSettingsVisible(true)}>
           <Icon name="settings" size={30} color="#1E8AFF" />
         </TouchableOpacity>
-        <Button title="Reset" onPress={confirmReset} />
+        <Button title="Reset" onPress={confirmReset}/>
         <Button title="↺" onPress={handleUndo} disabled={history.length === 0} />
         <Button title="↻" onPress={handleRestore} disabled={future.length === 0} />
         <Button title={isSelecting ? "Cancel Select" : "Select"} onPress={toggleSelectMode} />
@@ -673,7 +712,7 @@ const handleSaveEdit = async () => {
               />
             </View>
             <Button title="Save Changes" onPress={handleSaveEdit} />
-            <Button title="Close" onPress={() => setEditModalVisible(false)} />
+            <Button title="Close" onPress={() => setEditModalVisible(false)} color="red"/>
           </View>
         </View>
       </Modal>
@@ -702,14 +741,14 @@ const handleSaveEdit = async () => {
       {isSelecting && selectedBlocks.length > 1 && (
         <View style={styles.selectionOptions}>
           <Button title="Merge" onPress={handleMerge} />
-          <Button title="Cancel" onPress={handleCancel} />
+          <Button title="Cancel" onPress={handleCancel} color="red"/>
         </View>
       )}
 
       {isSelecting && selectedBlocks.length === 1 && (
         <View style={styles.selectionOptions}>
           <Button title="Split" onPress={handleSplit} />
-          <Button title="Cancel" onPress={handleCancel} />
+          <Button title="Cancel" onPress={handleCancel} color="red"/>
         </View>
       )}
 

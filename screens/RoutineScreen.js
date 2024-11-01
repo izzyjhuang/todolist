@@ -199,7 +199,7 @@ const handleSaveSettings = () => {
     setSettingsVisible(false);
 };
 
-  const toggleSelectMode = () => {
+const toggleSelectMode = () => {
     setIsSelecting(!isSelecting);
     setSelectedBlocks([]);
   };
@@ -210,18 +210,26 @@ const handleSaveSettings = () => {
   };
 
   const handleBlockPressSelectMode = (block) => {
+    const blockIndex = parseInt(block.id);
+  
     if (selectedBlocks.length === 0) {
+      // Start a new selection if no blocks are selected
       setSelectedBlocks([block]);
     } else {
-      const lastSelected = selectedBlocks[selectedBlocks.length - 1];
-      const blockIndex = parseInt(block.id);
-      const lastIndex = parseInt(lastSelected.id);
-
-      if (blockIndex > lastIndex) {
-        const newSelection = blocks.slice(lastIndex, blockIndex + 1);
+      const firstSelectedIndex = parseInt(selectedBlocks[0].id);
+      const lastSelectedIndex = parseInt(selectedBlocks[selectedBlocks.length - 1].id);
+  
+      if (blockIndex > lastSelectedIndex) {
+        // If the new block is after the last selected, extend the selection forward
+        const newSelection = blocks.slice(firstSelectedIndex, blockIndex + 1);
+        setSelectedBlocks(newSelection);
+      } else if (blockIndex < firstSelectedIndex) {
+        // If the new block is before the first selected, extend the selection backward
+        const newSelection = blocks.slice(blockIndex, lastSelectedIndex + 1);
         setSelectedBlocks(newSelection);
       } else {
-        const newSelection = blocks.slice(blockIndex, lastIndex + 1);
+        // If the block is within the current selection, reduce the selection up to the clicked block
+        const newSelection = selectedBlocks.filter(b => parseInt(b.id) <= blockIndex);
         setSelectedBlocks(newSelection);
       }
     }
@@ -230,33 +238,47 @@ const handleSaveSettings = () => {
   const handleSplit = () => {
     if (selectedBlocks.length === 1) {
       saveHistory();
-
+  
       const block = selectedBlocks[0];
       const [startTime, endTime] = block.time.split('-');
       let [startHour, startMinute] = startTime.split(':').map(Number);
       let [endHour, endMinute] = endTime.split(':').map(Number);
-
+  
       const startTotalMinutes = startHour * 60 + startMinute;
       const endTotalMinutes = endHour * 60 + endMinute;
       const totalMinutes = endTotalMinutes - startTotalMinutes;
-
-      const numBlocks = totalMinutes / 5;
-
+  
+      let numBlocks;
+      let splitInterval;
+  
+      // Determine split interval and number of blocks
+      if (totalMinutes === timeInterval) {
+        splitInterval = 5; // Split 15-minute blocks into 5-minute intervals
+        numBlocks = timeInterval / 5;
+      } else if (totalMinutes % timeInterval === 0) {
+        splitInterval = timeInterval; // Split into blocks of the interval size
+        numBlocks = totalMinutes / timeInterval;
+      } else {
+        splitInterval = 5; // For other cases, default to 5-minute splits
+        numBlocks = Math.floor(totalMinutes / splitInterval);
+      }
+  
       const newBlocks = [];
-
+  
       for (let i = 0; i < numBlocks; i++) {
         const newStartTime = `${startHour.toString().padStart(2, '0')}:${startMinute
           .toString()
           .padStart(2, '0')}`;
-        startMinute += 5;
-        if (startMinute === 60) {
-          startMinute = 0;
+  
+        startMinute += splitInterval;
+        if (startMinute >= 60) {
+          startMinute -= 60;
           startHour += 1;
         }
         const newEndTime = `${startHour.toString().padStart(2, '0')}:${startMinute
           .toString()
           .padStart(2, '0')}`;
-
+  
         newBlocks.push({
           id: `${block.id}-${i}`,
           time: `${newStartTime}-${newEndTime}`,
@@ -265,24 +287,23 @@ const handleSaveSettings = () => {
           priority: 'none',
         });
       }
-
+  
       const updatedBlocks = [
         ...blocks.slice(0, parseInt(block.id)),
         ...newBlocks,
         ...blocks.slice(parseInt(block.id) + 1),
       ];
-
+  
       const reassignedBlocks = updatedBlocks.map((block, index) => ({
         ...block,
         id: index.toString(),
       }));
-
+  
       setBlocks(reassignedBlocks);
       setSelectedBlocks([]);
       setIsSelecting(false);
     }
   };
-
   const handleReset = () => {
     saveHistory(); // Save the current state before resetting
     const clearedBlocks = blocks.map(block => ({ ...block, title: '', description: '', priority: 'none' }));
@@ -336,7 +357,8 @@ const handleSaveSettings = () => {
   };
 
   const handleCancel = () => {
-    setSelectedBlocks([]);
+    setSelectedBlocks([]); // Clear any selected blocks
+    setIsSelecting(false); // Exit select mode and return to entry mode
   };
 
   const getPriorityColor = (priority) => {
@@ -375,8 +397,11 @@ const handleSaveSettings = () => {
       style={[
         styles.block,
         { backgroundColor: getPriorityColor(item.priority) },
+        selectedBlocks.find(block => block.id === item.id) ? styles.selectedBlock : null
       ]}
-      onPress={() => handleBlockPressEntryMode(item)}
+      onPress={() =>
+        isSelecting ? handleBlockPressSelectMode(item) : handleBlockPressEntryMode(item)
+      }
     >
       <Text style={styles.timeText}>{item.time}</Text>
       {item.title ? (
@@ -448,14 +473,14 @@ const handleSaveSettings = () => {
       {isSelecting && selectedBlocks.length > 1 && (
         <View style={styles.selectionOptions}>
           <Button title="Merge" onPress={handleMerge} />
-          <Button title="Cancel" onPress={handleCancel} />
+          <Button title="Cancel" onPress={handleCancel} color="red"/>
         </View>
       )}
 
       {isSelecting && selectedBlocks.length === 1 && (
         <View style={styles.selectionOptions}>
           <Button title="Split" onPress={handleSplit} />
-          <Button title="Cancel" onPress={handleCancel} />
+          <Button title="Cancel" onPress={handleCancel} color="red"/>
         </View>
       )}
 
@@ -623,6 +648,16 @@ const styles = StyleSheet.create({
   emptyText: {
     fontSize: 14,
     color: '#aaa',
+  },
+  selectionOptions: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginTop: 10,
+  },
+  selectedBlock: {
+    borderColor: '#00f',
+    borderWidth: 2,
+    borderRadius: 10, // Rounds edges of the selected block
   },
 });
 

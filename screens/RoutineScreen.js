@@ -238,33 +238,47 @@ const toggleSelectMode = () => {
   const handleSplit = () => {
     if (selectedBlocks.length === 1) {
       saveHistory();
-
+  
       const block = selectedBlocks[0];
       const [startTime, endTime] = block.time.split('-');
       let [startHour, startMinute] = startTime.split(':').map(Number);
       let [endHour, endMinute] = endTime.split(':').map(Number);
-
+  
       const startTotalMinutes = startHour * 60 + startMinute;
       const endTotalMinutes = endHour * 60 + endMinute;
       const totalMinutes = endTotalMinutes - startTotalMinutes;
-
-      const numBlocks = totalMinutes / 5;
-
+  
+      let numBlocks;
+      let splitInterval;
+  
+      // Determine split interval and number of blocks
+      if (totalMinutes === timeInterval) {
+        splitInterval = 5; // Split 15-minute blocks into 5-minute intervals
+        numBlocks = timeInterval / 5;
+      } else if (totalMinutes % timeInterval === 0) {
+        splitInterval = timeInterval; // Split into blocks of the interval size
+        numBlocks = totalMinutes / timeInterval;
+      } else {
+        splitInterval = 5; // For other cases, default to 5-minute splits
+        numBlocks = Math.floor(totalMinutes / splitInterval);
+      }
+  
       const newBlocks = [];
-
+  
       for (let i = 0; i < numBlocks; i++) {
         const newStartTime = `${startHour.toString().padStart(2, '0')}:${startMinute
           .toString()
           .padStart(2, '0')}`;
-        startMinute += 5;
-        if (startMinute === 60) {
-          startMinute = 0;
+  
+        startMinute += splitInterval;
+        if (startMinute >= 60) {
+          startMinute -= 60;
           startHour += 1;
         }
         const newEndTime = `${startHour.toString().padStart(2, '0')}:${startMinute
           .toString()
           .padStart(2, '0')}`;
-
+  
         newBlocks.push({
           id: `${block.id}-${i}`,
           time: `${newStartTime}-${newEndTime}`,
@@ -273,24 +287,23 @@ const toggleSelectMode = () => {
           priority: 'none',
         });
       }
-
+  
       const updatedBlocks = [
         ...blocks.slice(0, parseInt(block.id)),
         ...newBlocks,
         ...blocks.slice(parseInt(block.id) + 1),
       ];
-
+  
       const reassignedBlocks = updatedBlocks.map((block, index) => ({
         ...block,
         id: index.toString(),
       }));
-
+  
       setBlocks(reassignedBlocks);
       setSelectedBlocks([]);
       setIsSelecting(false);
     }
   };
-
   const handleReset = () => {
     saveHistory(); // Save the current state before resetting
     const clearedBlocks = blocks.map(block => ({ ...block, title: '', description: '', priority: 'none' }));

@@ -59,12 +59,12 @@ export default function App() {
 useEffect(() => {
   const checkMoveTasks = () => {
     const now = new Date();
-    if (now.getHours() === 7 && now.getMinutes() === 22) {
+    if (now.getHours() === 7 && now.getMinutes() === 33) {
       moveTasksToToday();
     }
   };
 
-  const moveInterval = setInterval(checkMoveTasks, 2000); // Check every minute
+  const moveInterval = setInterval(checkMoveTasks, 6000); // Check every minute
   return () => clearInterval(moveInterval); // Cleanup on unmount
 }, [moveTasksToToday]);
 
@@ -72,12 +72,12 @@ useEffect(() => {
 useEffect(() => {
   const checkLoadRoutine = () => {
     const now = new Date();
-    if (now.getHours() === 7 && now.getMinutes() === 23) {
+    if (now.getHours() === 7 && now.getMinutes() === 34) {
       loadRoutineForTomorrow();
     }
   };
 
-  const routineInterval = setInterval(checkLoadRoutine, 2000); // Check every minute
+  const routineInterval = setInterval(checkLoadRoutine, 6000); // Check every minute
   return () => clearInterval(routineInterval); // Cleanup on unmount
 }, [loadRoutineForTomorrow]);
 

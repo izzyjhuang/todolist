@@ -24,10 +24,17 @@ const RemindersScreen = () => {
     const loadTodos = async () => {
       const storedTodos = await AsyncStorage.getItem('todos');
       if (storedTodos) {
-        const parsedTodos = JSON.parse(storedTodos).map(todo => ({
-          ...todo,
-          id: todo.id || uuidv4(), // Assign UUID if missing
-        }));
+        const seenIds = new Set();
+        const parsedTodos = JSON.parse(storedTodos).map(todo => {
+          const id = todo.id || uuidv4();
+          // Ensure each ID is unique by checking the Set
+          if (seenIds.has(id)) {
+            return { ...todo, id: uuidv4() }; // Generate a new ID if duplicate
+          } else {
+            seenIds.add(id);
+            return { ...todo, id };
+          }
+        });
         setTodos(parsedTodos.sort((a, b) => new Date(a.date) - new Date(b.date)));
       }
     };

@@ -819,6 +819,7 @@ const styles = StyleSheet.create({
     padding: 10,
     backgroundColor: '#f1f1f1',
     borderRadius: 5,
+    maxHeight: 300,
   },
   remindersHeader: {
     fontSize: 18,

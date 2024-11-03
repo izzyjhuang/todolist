@@ -282,6 +282,7 @@ const RemindersScreen = () => {
         renderItem={renderTodo}
         renderSectionHeader={renderSectionHeader}
         keyExtractor={(item) => item.id}
+        stickySectionHeadersEnabled={true}
         contentContainerStyle={styles.listContainer}
       />
 
@@ -345,7 +346,8 @@ const styles = StyleSheet.create({
   sectionHeaderContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 10,
+    paddingVertical: 0,
+    backgroundColor: '#fff',
   },
   sectionHeader: {
     fontSize: 24,

@@ -329,13 +329,22 @@ const TomorrowScreen = ({ tomorrowTaskUpdated }) => {
     setNewTitle(reminder.title);
     setNewDescription(reminder.description || '');
     setNewDate(new Date(reminder.date));
+    setNewUrgent(reminder.urgent || false); // Set urgent based on the reminder's current state
+    setNewImportant(reminder.important || false); // Set important based on the reminder's current state
     setEditModalVisible(true);
-};
+  };
 
 const handleSaveEdit = async () => {
   const updatedReminders = reminders.map(reminder =>
     reminder.id === editingReminder
-      ? { ...reminder, title: newTitle, description: newDescription, date: newDate }
+      ? { 
+          ...reminder, 
+          title: newTitle, 
+          description: newDescription, 
+          date: newDate, 
+          urgent: newUrgent,
+          important: newImportant
+        }
       : reminder
   );
 
@@ -708,9 +717,20 @@ const handleSplit = () => {
                 style={styles.datePicker}
               />
             </View>
-            <Switch value={newUrgent} onValueChange={setNewUrgent} />
-            <Switch value={newImportant} onValueChange={setNewImportant} />
-
+            <View style={styles.switchContainer}>
+                    <Text>Urgent</Text>
+                    <Switch
+                        value={newUrgent}
+                        onValueChange={setNewUrgent}
+                    />
+                </View>
+                <View style={styles.switchContainer}>
+                    <Text>Important</Text>
+                    <Switch
+                        value={newImportant}
+                        onValueChange={setNewImportant}
+                    />
+                </View>
             <Button title="Save Changes" onPress={handleSaveEdit} />
             <Button title="Close" onPress={() => setEditModalVisible(false)} />
           </View>
@@ -946,6 +966,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '60%',
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: 10,
   },
   titleWithTags: {
     flexDirection: 'row',

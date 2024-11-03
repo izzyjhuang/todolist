@@ -338,34 +338,44 @@ const renderReminderItem = ({ item }) => (
     setNewTitle(reminder.title);
     setNewDescription(reminder.description || '');
     setNewDate(new Date(reminder.date));
+    setNewUrgent(reminder.urgent || false); // Set urgent based on the reminder's current state
+    setNewImportant(reminder.important || false); // Set important based on the reminder's current state
     setEditModalVisible(true);
-};
+  };
 
-const handleSaveEdit = async () => {
-  const updatedReminders = reminders.map(reminder =>
-    reminder.id === editingReminder
-      ? { ...reminder, title: newTitle, description: newDescription, date: newDate }
-      : reminder
-  );
-
-  // Save updated reminders to AsyncStorage
-  await saveReminders(updatedReminders); 
+  const handleSaveEdit = async () => {
+    // Map through reminders and apply changes to the selected reminder
+    const updatedReminders = reminders.map(reminder =>
+      reminder.id === editingReminder
+        ? { 
+            ...reminder, 
+            title: newTitle, 
+            description: newDescription, 
+            date: newDate, 
+            urgent: newUrgent,
+            important: newImportant
+          }
+        : reminder
+    );
   
-  // Filter to show only today’s reminders
-  filterTodayReminders(updatedReminders); 
+    // Save updated reminders to AsyncStorage
+    await saveReminders(updatedReminders);
   
-  // Emit an event to notify RemindersScreen of the update
-  eventEmitter.emit('reminderUpdated');
+    // Re-filter and load reminders for the current date
+    filterTodayReminders(updatedReminders);
   
-  // Close the edit modal and reset state
-  setEditModalVisible(false);
-  setEditingReminder(null);
-  setNewTitle('');
-  setNewDescription('');
-  setNewDate(new Date());
-  setNewUrgent(false);
-  setNewImportant(false);
-};
+    // Emit event to sync with other screens/components
+    eventEmitter.emit('reminderUpdated');
+  
+    // Reset edit modal state and close modal
+    setEditModalVisible(false);
+    setEditingReminder(null);
+    setNewTitle('');
+    setNewDescription('');
+    setNewDate(new Date());
+    setNewUrgent(false);
+    setNewImportant(false);
+  };
   
   // Helper function to filter and set only today's reminders
   const filterTodayReminders = (reminders) => {
@@ -749,9 +759,20 @@ const handleSplit = () => {
                 style={styles.datePicker}
               />
             </View>
-            <Switch value={newUrgent} onValueChange={setNewUrgent} />
-            <Switch value={newImportant} onValueChange={setNewImportant} />
-
+            <View style={styles.switchContainer}>
+                    <Text>Urgent</Text>
+                    <Switch
+                        value={newUrgent}
+                        onValueChange={setNewUrgent}
+                    />
+                </View>
+                <View style={styles.switchContainer}>
+                    <Text>Important</Text>
+                    <Switch
+                        value={newImportant}
+                        onValueChange={setNewImportant}
+                    />
+                </View>
             <Button title="Save Changes" onPress={handleSaveEdit} />
             <Button title="Close" onPress={() => setEditModalVisible(false)} color="red"/>
           </View>
@@ -997,6 +1018,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '60%',
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: 10,
   },
   titleWithTags: {
     flexDirection: 'row',

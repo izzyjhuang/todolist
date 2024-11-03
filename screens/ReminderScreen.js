@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, SectionList, Modal, TextInput, TouchableOpacity, StyleSheet, Button } from 'react-native';
+import { View, Text, SectionList, Modal, TextInput, TouchableOpacity, StyleSheet, Button, Switch } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import DateTimePicker from '@react-native-community/datetimepicker';
@@ -18,7 +18,8 @@ const RemindersScreen = () => {
   const [history, setHistory] = useState([]);
   const [future, setFuture] = useState([]);
   const [showArchived, setShowArchived] = useState(false); // State for archived section visibility
-
+  const [newUrgent, setNewUrgent] = useState(false);
+  const [newImportant, setNewImportant] = useState(false);
 
   useEffect(() => {
     const loadTodos = async () => {
@@ -124,28 +125,30 @@ const RemindersScreen = () => {
   const handleAddOrEditTodo = () => {
     saveHistory(); // Save the current state for undo functionality
     let updatedTodos;
-  
+
     if (editingIndex !== null) {
-      // Editing an existing todo
-      updatedTodos = todos.map(todo =>
-        todo.id === editingIndex
-          ? { ...todo, title: newTitle, description: newDescription, date: newDate }
-          : todo
-      );
-      setEditingIndex(null); // Reset editing index after editing
+        // Editing an existing todo
+        updatedTodos = todos.map(todo =>
+            todo.id === editingIndex
+                ? { ...todo, title: newTitle, description: newDescription, date: newDate, urgent: newUrgent, important: newImportant }
+                : todo
+        );
+        setEditingIndex(null); // Reset editing index after editing
     } else {
-      // Adding a new todo
-      const newTodo = { id: uuidv4(), title: newTitle, description: newDescription, date: newDate, completed: false };
-      updatedTodos = [...todos, newTodo];
+        // Adding a new todo
+        const newTodo = { id: uuidv4(), title: newTitle, description: newDescription, date: newDate, completed: false, urgent: newUrgent, important: newImportant };
+        updatedTodos = [...todos, newTodo];
     }
-  
+
     saveTodos(updatedTodos); // Save the updated list of todos
     eventEmitter.emit('reminderUpdated'); // Emit an event for update
     setModalVisible(false); // Close the modal after adding or editing
     setNewTitle(''); // Reset the title input
     setNewDescription(''); // Reset the description input
     setNewDate(new Date()); // Reset the date input to today’s date
-  };
+    setNewUrgent(false); // Reset Urgent flag
+    setNewImportant(false); // Reset Important flag
+};
   
   const toggleComplete = async (id) => {
     saveHistory(); // Save history for undo functionality
@@ -161,7 +164,6 @@ const RemindersScreen = () => {
 
   const categorizeTodos = () => {
     const now = new Date();
-    const todayDate = now.toDateString();
     const endOfWeek = new Date(now);
     endOfWeek.setDate(now.getDate() + 6);
 
@@ -171,40 +173,60 @@ const RemindersScreen = () => {
         { title: 'Today', data: [] },
         { title: 'Upcoming Week', data: [] },
         { title: 'Scheduled', data: [] },
-      ];
-  
+    ];
 
-      const setToMidnight = (date) => {
+    const setToMidnight = (date) => {
         const newDate = new Date(date);
         newDate.setHours(0, 0, 0, 0); // Set time to midnight
         return newDate;
-      };
-      
-      const today = setToMidnight(new Date());
-      
-      todos.forEach(todo => {
-        const todoDate = setToMidnight(new Date(todo.date));
-      
-        if (todo.completed && todoDate < today) {
-          sections[0].data.push(todo); // Add to Archived if completed and in the past
-        } else if (todoDate < today) {
-          sections[1].data.push(todo); // Past Due section
-        } else if (todoDate.getTime() === today.getTime()) {
-          sections[2].data.push(todo); // Today's tasks
-        } else if (todoDate > today && todoDate <= endOfWeek) {
-          sections[3].data.push(todo); // Upcoming Week section
-        } else if (todoDate > endOfWeek) {
-          sections[4].data.push(todo); // Scheduled section
-        }
-      });
+    };
 
-      return sections
-      .filter(section => section.data.length > 0) // Only include non-empty sections
-      .map(section => ({
-        ...section,
-        data: section.title === 'Archived ' && !showArchived ? [] : section.data, // Hide archived if toggled off
-      }));
-  };
+    const today = setToMidnight(new Date());
+
+    todos.forEach(todo => {
+        const todoDate = setToMidnight(new Date(todo.date));
+
+        if (todo.completed && todoDate < today) {
+            sections[0].data.push(todo); // Add to Archived if completed and in the past
+        } else if (todoDate < today) {
+            sections[1].data.push(todo); // Past Due section
+        } else if (todoDate.getTime() === today.getTime()) {
+            sections[2].data.push(todo); // Today's tasks
+        } else if (todoDate > today && todoDate <= endOfWeek) {
+            sections[3].data.push(todo); // Upcoming Week section
+        } else if (todoDate > endOfWeek) {
+            sections[4].data.push(todo); // Scheduled section
+        }
+    });
+
+    // Sort each section's data array with priorities:
+    // Urgent first, then Important, then completed tasks at the bottom
+    sections.forEach((section) => {
+        section.data.sort((a, b) => {
+            // Prioritize Urgent tasks
+            if (a.urgent && !b.urgent) return -1;
+            if (!a.urgent && b.urgent) return 1;
+
+            // If neither or both are Urgent, prioritize Important tasks
+            if (a.important && !b.important) return -1;
+            if (!a.important && b.important) return 1;
+
+            // If priorities are the same, completed tasks go to the bottom
+            if (a.completed && !b.completed) return 1;
+            if (!a.completed && b.completed) return -1;
+
+            // Otherwise, sort by date if tasks have the same priority and completion status
+            return new Date(a.date) - new Date(b.date);
+        });
+    });
+
+    return sections
+        .filter(section => section.data.length > 0) // Only include non-empty sections
+        .map(section => ({
+            ...section,
+            data: section.title === 'Archived ' && !showArchived ? [] : section.data, // Hide archived if toggled off
+        }));
+};
 
   const toggleArchivedVisibility = () => {
     setShowArchived(!showArchived);
@@ -230,9 +252,11 @@ const RemindersScreen = () => {
     setNewTitle(todo.title); // Populate modal with the todo title
     setNewDescription(todo.description || ''); // Populate modal with the todo description
     setNewDate(new Date(todo.date)); // Populate modal with the todo date
+    setNewUrgent(todo.urgent || false); // Set urgent flag
+    setNewImportant(todo.important || false); // Set important flag
     setEditingIndex(id); // Set the id of the todo being edited
     setModalVisible(true); // Show the modal for editing
-  };
+};
 
   const handleDeleteTodo = async (id) => {
   saveHistory(); // Save history for undo functionality
@@ -252,20 +276,30 @@ const RemindersScreen = () => {
 
   const renderTodo = ({ item, index }) => (
     <Swipeable renderRightActions={() => renderRightActions(item.id)}>
-      <TouchableOpacity onPress={() => handleEditTodo(item.id)} style={styles.todoItem}>
-        <TouchableOpacity onPress={() => toggleComplete(item.id)}>
-            <Icon name={item.completed ? "check-circle" : "radio-button-unchecked"} size={24} color={item.completed ? "green" : "gray"} />
-        </TouchableOpacity>
-        <View style={styles.todoTextContainer}>
-            <Text style={[styles.todoText, item.completed && styles.completedText]}>{item.title}</Text>
-            {item.description ? (
-            <Text style={[styles.descriptionText, item.completed && styles.completedText]}>{item.description}</Text>
-            ) : null}
-        </View>
-        <Text style={[styles.dateText, item.completed && styles.completedText]}>{new Date(item.date).toLocaleDateString('en-US')}</Text>
+        <TouchableOpacity onPress={() => handleEditTodo(item.id)} style={styles.todoItem}>
+            <TouchableOpacity onPress={() => toggleComplete(item.id)}>
+                <Icon name={item.completed ? "check-circle" : "radio-button-unchecked"} size={24} color={item.completed ? "green" : "gray"} />
+            </TouchableOpacity>
+            <View style={styles.todoTextContainer}>
+                <View style={styles.titleWithTags}>
+                    <Text style={[
+                        styles.todoText,
+                        item.completed && styles.completedText,
+                        styles.titleText // Add a width constraint to prevent overflow
+                    ]}>
+                        {item.title}
+                    </Text>
+                    {item.urgent && <Text style={styles.urgentTag}>U</Text>}
+                    {item.important && <Text style={styles.importantTag}>I</Text>}
+                </View>
+                {item.description ? (
+                    <Text style={[styles.descriptionText, item.completed && styles.completedText]}>{item.description}</Text>
+                ) : null}
+            </View>
+            <Text style={[styles.dateText, item.completed && styles.completedText]}>{new Date(item.date).toLocaleDateString('en-US')}</Text>
         </TouchableOpacity>
     </Swipeable>
-  );
+);
 
   return (
     <View style={styles.container}>
@@ -293,39 +327,56 @@ const RemindersScreen = () => {
       <Modal visible={modalVisible} animationType="slide" transparent={true}>
         <View style={styles.modalContainer}>
             <View style={styles.modalContent}>
-            <Text style={styles.modalTitle}>{editingIndex !== null ? 'Edit Reminder' : 'Add Reminder'}</Text>
-            <TextInput
-                placeholder="Title"
-                value={newTitle}
-                onChangeText={setNewTitle}
-                style={styles.input}
-            />
-            <TextInput
-                placeholder="Description (Optional)"
-                value={newDescription}
-                onChangeText={setNewDescription}
-                style={styles.input}
-            />
-            <View style={styles.datePickerContainer}>
-                <DateTimePicker
-                value={newDate}
-                mode="date"
-                display="default"
-                onChange={(event, selectedDate) => setNewDate(selectedDate || new Date())}
-                style={styles.datePicker}
+                <Text style={styles.modalTitle}>{editingIndex !== null ? 'Edit Reminder' : 'Add Reminder'}</Text>
+                <TextInput
+                    placeholder="Title"
+                    value={newTitle}
+                    onChangeText={setNewTitle}
+                    style={styles.input}
                 />
-            </View>
-            <Button title={editingIndex !== null ? 'Save Changes' : 'Add'} onPress={handleAddOrEditTodo} />
-            <Button title="Close" color="red" onPress={() => {
-            setNewTitle('');         // Clear title field
-            setNewDescription('');    // Clear description field
-            setNewDate(new Date());   // Reset date to today
-            setEditingIndex(null);    // Ensure we're in add mode
-            setModalVisible(false);   // Close the modal
-            }} />
+                <TextInput
+                    placeholder="Description (Optional)"
+                    value={newDescription}
+                    onChangeText={setNewDescription}
+                    style={styles.input}
+                />
+                <View style={styles.datePickerContainer}>
+                    <DateTimePicker
+                        value={newDate}
+                        mode="date"
+                        display="default"
+                        onChange={(event, selectedDate) => setNewDate(selectedDate || new Date())}
+                        style={styles.datePicker}
+                    />
+                </View>
+                
+                {/* Add switches for Urgent and Important flags */}
+                <View style={styles.switchContainer}>
+                    <Text>Urgent</Text>
+                    <Switch
+                        value={newUrgent}
+                        onValueChange={setNewUrgent}
+                    />
+                </View>
+                <View style={styles.switchContainer}>
+                    <Text>Important</Text>
+                    <Switch
+                        value={newImportant}
+                        onValueChange={setNewImportant}
+                    />
+                </View>
+
+                <Button title={editingIndex !== null ? 'Save Changes' : 'Add'} onPress={handleAddOrEditTodo} />
+                <Button title="Close" color="red" onPress={() => {
+                    setNewTitle('');         // Clear title field
+                    setNewDescription('');    // Clear description field
+                    setNewDate(new Date());   // Reset date to today
+                    setEditingIndex(null);    // Ensure we're in add mode
+                    setModalVisible(false);   // Close the modal
+                }} />
             </View>
         </View>
-        </Modal>
+    </Modal>
     </View>
   );
 };
@@ -465,6 +516,51 @@ const styles = StyleSheet.create({
   completedText: {
     color: 'gray',
     textDecorationLine: 'line-through',
+  },
+  switchContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginVertical: 10,
+  },
+  titleWithTags: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'nowrap', // Prevents tags from wrapping to a new line
+  },
+  titleText: {
+    maxWidth: '70%', // Limits title width to prevent overlap
+    flexShrink: 1, // Allows text to shrink within the available space
+  },
+  urgentTag: {
+    backgroundColor: '#ffe5e5', // Light red background
+    color: 'red', // Dark red text
+    fontSize: 12,
+    fontWeight: 'bold',
+    height: 24,
+    width: 24,
+    textAlign: 'center',
+    lineHeight: 24, // Center text vertically
+    borderRadius: 8, // Fully rounded
+    marginLeft: 6, // Space between title and tag
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden', // Ensure the border radius applies correctly
+  },
+  importantTag: {
+    backgroundColor: '#e5f0ff', // Light blue background
+    color: 'blue', // Dark blue text
+    fontSize: 12,
+    fontWeight: 'bold',
+    height: 24,
+    width: 24,
+    textAlign: 'center',
+    lineHeight: 24, // Center text vertically
+    borderRadius: 8, // Fully rounded
+    marginLeft: 6, // Space between tags
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden', // Ensure the border radius applies correctly
   },
 });
 

@@ -203,6 +203,10 @@ const RemindersScreen = () => {
     // Urgent first, then Important, then completed tasks at the bottom
     sections.forEach((section) => {
         section.data.sort((a, b) => {
+            // If priorities are the same, completed tasks go to the bottom
+            if (a.completed && !b.completed) return 1;
+            if (!a.completed && b.completed) return -1;
+            
             // Prioritize Urgent tasks
             if (a.urgent && !b.urgent) return -1;
             if (!a.urgent && b.urgent) return 1;
@@ -210,10 +214,6 @@ const RemindersScreen = () => {
             // If neither or both are Urgent, prioritize Important tasks
             if (a.important && !b.important) return -1;
             if (!a.important && b.important) return 1;
-
-            // If priorities are the same, completed tasks go to the bottom
-            if (a.completed && !b.completed) return 1;
-            if (!a.completed && b.completed) return -1;
 
             // Otherwise, sort by date if tasks have the same priority and completion status
             return new Date(a.date) - new Date(b.date);
@@ -502,6 +502,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: 80,
     height: '100%',
+    borderRadius: 5,
   },
   deleteButtonText: {
     color: 'white',

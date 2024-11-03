@@ -59,7 +59,7 @@ export default function App() {
 useEffect(() => {
   const checkMoveTasks = () => {
     const now = new Date();
-    if (now.getHours() === 6 && now.getMinutes() >= 50 && now.getMinutes() <= 51) {
+    if (now.getHours() === 0 && now.getMinutes() >= 1 && now.getMinutes() <= 2) {
       moveTasksToToday();
     }
   };
@@ -72,7 +72,7 @@ useEffect(() => {
 useEffect(() => {
   const checkLoadRoutine = () => {
     const now = new Date();
-    if (now.getHours() === 6 && now.getMinutes() >= 52 && now.getMinutes() <= 53) {
+    if (now.getHours() === 0 && now.getMinutes() >= 3 && now.getMinutes() <= 4) {
       loadRoutineForTomorrow();
     }
   };

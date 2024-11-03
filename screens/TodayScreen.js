@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useFocusEffect } from '@react-navigation/native';
 
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Button, Modal, TextInput } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Button, Modal, TextInput, Switch} from 'react-native';
 import { usePriorities } from '../components/PrioritiesContext';
 
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -132,6 +132,8 @@ const TodayScreen = ({ todayTaskUpdated }) => {
   const [timeInterval, setTimeInterval] = useState(15);
   const prevIntervalRef = useRef(timeInterval);
   const [resetConfirmationVisible, setResetConfirmationVisible] = useState(false); // Confirmation modal visibility
+  const [newUrgent, setNewUrgent] = useState(false);
+  const [newImportant, setNewImportant] = useState(false);
 
   const moveTasksToToday = useCallback(async () => {
     const tomorrowTasks = await AsyncStorage.getItem('tomorrowTasks');
@@ -225,24 +227,27 @@ const adjustTimeBlocks = (newDayStart, newDayEnd) => {
   setDayEnd(newDayEnd);
 };
 
-  const renderReminderItem = ({ item }) => (
-    <Swipeable renderRightActions={() => renderRightActions(item.id)}>
-      <TouchableOpacity onPress={() => openEditModal(item)} style={styles.reminderItem}>
-        <TouchableOpacity onPress={() => toggleComplete(item.id)}>
-          <Icon name={item.completed ? "check-circle" : "radio-button-unchecked"} size={24} color={item.completed ? "green" : "gray"} />
-        </TouchableOpacity>
-        <View style={styles.reminderTextContainer}>
-          <Text style={[styles.reminderTitle, item.completed && styles.completedText]}>{item.title}</Text>
-          {item.description ? (
-            <Text style={[styles.reminderDescription, item.completed && styles.completedText]}>{item.description}</Text>
-          ) : null}
-        </View>
-        {/* <Text style={[styles.reminderDate, item.completed && styles.completedText]}>
-          {new Date(item.date).toLocaleDateString('en-US')}
-        </Text> */}
+const renderReminderItem = ({ item }) => (
+  <Swipeable renderRightActions={() => renderRightActions(item.id)}>
+    <TouchableOpacity onPress={() => openEditModal(item)} style={styles.reminderItem}>
+      <TouchableOpacity onPress={() => toggleComplete(item.id)}>
+        <Icon name={item.completed ? "check-circle" : "radio-button-unchecked"} size={24} color={item.completed ? "green" : "gray"} />
       </TouchableOpacity>
-    </Swipeable>
-  );
+      <View style={styles.reminderTextContainer}>
+        <View style={styles.titleWithTags}>
+          <Text style={[styles.reminderTitle, item.completed && styles.completedText, styles.titleText]}>
+            {item.title}
+          </Text>
+          {item.urgent && <Text style={styles.urgentTag}>U</Text>}
+          {item.important && <Text style={styles.importantTag}>I</Text>}
+        </View>
+        {item.description ? (
+          <Text style={[styles.reminderDescription, item.completed && styles.completedText]}>{item.description}</Text>
+        ) : null}
+      </View>
+    </TouchableOpacity>
+  </Swipeable>
+);
 
   const renderRightActions = (id) => (
     <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteReminder(id)}>
@@ -270,6 +275,17 @@ const adjustTimeBlocks = (newDayStart, newDayEnd) => {
           (todo) => setToMidnight(new Date(todo.date)).getTime() === todayDate.getTime() // Compare dates without time
         );
       }
+  
+      // Sort by urgency, importance, completion, and date
+      todayReminders.sort((a, b) => {
+        if (a.completed && !b.completed) return 1;
+        if (!a.completed && b.completed) return -1;
+        if (a.urgent && !b.urgent) return -1;
+        if (!a.urgent && b.urgent) return 1;
+        if (a.important && !b.important) return -1;
+        if (!a.important && b.important) return 1;
+        return new Date(a.date) - new Date(b.date);
+      });
   
       setReminders(todayReminders); // Set reminders to only today's reminders
       setIncompleteRemindersCount(todayReminders.filter(reminder => !reminder.completed).length);
@@ -347,6 +363,8 @@ const handleSaveEdit = async () => {
   setNewTitle('');
   setNewDescription('');
   setNewDate(new Date());
+  setNewUrgent(false);
+  setNewImportant(false);
 };
   
   // Helper function to filter and set only today's reminders
@@ -731,6 +749,9 @@ const handleSplit = () => {
                 style={styles.datePicker}
               />
             </View>
+            <Switch value={newUrgent} onValueChange={setNewUrgent} />
+            <Switch value={newImportant} onValueChange={setNewImportant} />
+
             <Button title="Save Changes" onPress={handleSaveEdit} />
             <Button title="Close" onPress={() => setEditModalVisible(false)} color="red"/>
           </View>
@@ -907,6 +928,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: 80,
     height: '100%',
+    borderRadius: 5,
   },
   deleteButtonText: {
     color: 'white',
@@ -975,6 +997,45 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     width: '60%',
+  },
+  titleWithTags: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'nowrap', // Prevents tags from wrapping to a new line
+  },
+  titleText: {
+    maxWidth: '70%', // Limits title width to prevent overlap
+    flexShrink: 1, // Allows text to shrink within the available space
+  },
+  urgentTag: {
+    backgroundColor: '#ffe5e5', // Light red background
+    color: 'red', // Dark red text
+    fontSize: 12,
+    fontWeight: 'bold',
+    height: 24,
+    width: 24,
+    textAlign: 'center',
+    lineHeight: 24, // Center text vertically
+    borderRadius: 8, // Fully rounded
+    marginLeft: 6, // Space between title and tag
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden', // Ensure the border radius applies correctly
+  },
+  importantTag: {
+    backgroundColor: '#e5f0ff', // Light blue background
+    color: 'blue', // Dark blue text
+    fontSize: 12,
+    fontWeight: 'bold',
+    height: 24,
+    width: 24,
+    textAlign: 'center',
+    lineHeight: 24, // Center text vertically
+    borderRadius: 8, // Fully rounded
+    marginLeft: 6, // Space between tags
+    alignItems: 'center',
+    justifyContent: 'center',
+    overflow: 'hidden', // Ensure the border radius applies correctly
   },
 });
 

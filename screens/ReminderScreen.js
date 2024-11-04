@@ -15,8 +15,6 @@ const RemindersScreen = () => {
   const [newDescription, setNewDescription] = useState('');
   const [newDate, setNewDate] = useState(new Date()); // Initialize with today's date
   const [editingIndex, setEditingIndex] = useState(null);
-  const [history, setHistory] = useState([]);
-  const [future, setFuture] = useState([]);
   const [showArchived, setShowArchived] = useState(false); // State for archived section visibility
   const [newUrgent, setNewUrgent] = useState(false);
   const [newImportant, setNewImportant] = useState(false);
@@ -60,70 +58,7 @@ const RemindersScreen = () => {
     await AsyncStorage.setItem('todos', JSON.stringify(sortedTodos));
   };
 
-  const saveHistory = () => {
-    setHistory([...history, todos]);
-    setFuture([]);
-  };
-
-  const saveTodosToStorage = async (key, data) => {
-    await AsyncStorage.setItem(key, JSON.stringify(data));
-  };
-  
-  const loadFromStorage = async (key) => {
-    const storedData = await AsyncStorage.getItem(key);
-    return storedData ? JSON.parse(storedData) : [];
-  };
-  
-  useEffect(() => {
-    const initializeHistoryAndFuture = async () => {
-      const savedHistory = await loadFromStorage('history');
-      const savedFuture = await loadFromStorage('future');
-      setHistory(savedHistory);
-      setFuture(savedFuture);
-    };
-    initializeHistoryAndFuture();
-  }, []);
-  
-  const handleUndo = async () => {
-    if (history.length > 0) {
-      const previousState = history[history.length - 1];
-      const newHistory = history.slice(0, -1);
-      
-      setTodos(previousState);
-      setHistory(newHistory);
-      setFuture([todos, ...future]);
-  
-      // Save the updated history and future to AsyncStorage
-      await saveTodos(previousState);
-      await saveTodosToStorage('history', newHistory);
-      await saveTodosToStorage('future', [todos, ...future]);
-  
-      // Trigger an update for TodayScreen
-      eventEmitter.emit('reminderUpdated');
-    }
-  };
-  
-  const handleRedo = async () => {
-    if (future.length > 0) {
-      const nextState = future[0];
-      const newFuture = future.slice(1);
-      
-      setTodos(nextState);
-      setHistory([...history, todos]);
-      setFuture(newFuture);
-  
-      // Save the updated history and future to AsyncStorage
-      await saveTodos(nextState);
-      await saveTodosToStorage('history', [...history, todos]);
-      await saveTodosToStorage('future', newFuture);
-  
-      // Trigger an update for TodayScreen
-      eventEmitter.emit('reminderUpdated');
-    }
-  };
-
   const handleAddOrEditTodo = () => {
-    saveHistory(); // Save the current state for undo functionality
     let updatedTodos;
 
     if (editingIndex !== null) {
@@ -148,11 +83,9 @@ const RemindersScreen = () => {
     setNewDate(new Date()); // Reset the date input to today’s date
     setNewUrgent(false); // Reset Urgent flag
     setNewImportant(false); // Reset Important flag
-};
+  };
   
   const toggleComplete = async (id) => {
-    saveHistory(); // Save history for undo functionality
-  
     const updatedTodos = todos.map(todo =>
       todo.id === id ? { ...todo, completed: !todo.completed } : todo
     );
@@ -226,7 +159,7 @@ const RemindersScreen = () => {
             ...section,
             data: section.title === 'Archived ' && !showArchived ? [] : section.data, // Hide archived if toggled off
         }));
-};
+  };
 
   const toggleArchivedVisibility = () => {
     setShowArchived(!showArchived);
@@ -247,7 +180,6 @@ const RemindersScreen = () => {
   );
 
   const handleEditTodo = (id) => {
-    saveHistory(); // Save the current state for undo functionality
     const todo = todos.find(todo => todo.id === id); // Find the todo by id
     setNewTitle(todo.title); // Populate modal with the todo title
     setNewDescription(todo.description || ''); // Populate modal with the todo description
@@ -256,17 +188,14 @@ const RemindersScreen = () => {
     setNewImportant(todo.important || false); // Set important flag
     setEditingIndex(id); // Set the id of the todo being edited
     setModalVisible(true); // Show the modal for editing
-};
+  };
 
   const handleDeleteTodo = async (id) => {
-  saveHistory(); // Save history for undo functionality
-
-  const updatedTodos = todos.filter(todo => todo.id !== id);
-
-  await saveTodos(updatedTodos); // Save updated todos to AsyncStorage
-  
-  eventEmitter.emit('reminderUpdated'); // Emit event for sync with TodayScreen
-};
+    const updatedTodos = todos.filter(todo => todo.id !== id);
+    await saveTodos(updatedTodos); // Save updated todos to AsyncStorage
+    
+    eventEmitter.emit('reminderUpdated'); // Emit event for sync with TodayScreen
+  };
 
   const renderRightActions = (id) => (
     <TouchableOpacity style={styles.deleteButton} onPress={() => handleDeleteTodo(id)}>
@@ -299,16 +228,12 @@ const RemindersScreen = () => {
             <Text style={[styles.dateText, item.completed && styles.completedText]}>{new Date(item.date).toLocaleDateString('en-US')}</Text>
         </TouchableOpacity>
     </Swipeable>
-);
+  );
 
   return (
     <View style={styles.container}>
       <View style={styles.headerContainer}>
         <Text style={styles.headerText}>Reminders</Text>
-        <View style={styles.buttonContainer}>
-          <Button title="↺" onPress={handleUndo} disabled={history.length === 0} />
-          <Button title="↻" onPress={handleRedo} disabled={future.length === 0} />
-        </View>
       </View>
 
       <SectionList
@@ -376,7 +301,7 @@ const RemindersScreen = () => {
                 }} />
             </View>
         </View>
-    </Modal>
+      </Modal>
     </View>
   );
 };

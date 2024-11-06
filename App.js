@@ -15,8 +15,6 @@ import RemindersScreen from './screens/ReminderScreen';
 
 const Tab = createBottomTabNavigator();
 
-const isTestingMode = true; // Toggle this to `false` in production
-
 export default function App() {
   const [todayTaskUpdated, setTodayTaskUpdated] = useState(false);
   const [tomorrowTaskUpdated, setTomorrowTaskUpdated] = useState(false);
@@ -60,12 +58,6 @@ export default function App() {
   // Function to check if it's the first app open of the day
   const checkFirstOpenOfDay = useCallback(async () => {
     const todayString = today.toISOString().split('T')[0]; // Format as YYYY-MM-DD
-
-    // In testing mode, manually set `lastOpenDate` to a past date to simulate a new day
-    if (isTestingMode) {
-      await AsyncStorage.setItem('lastOpenDate', '2020-01-01'); // Example past date for testing
-      await AsyncStorage.removeItem('hasRefreshedToday');       // Clear the refresh flag
-    }
 
     // Retrieve the last open date and check flag from AsyncStorage
     const lastOpenDate = await AsyncStorage.getItem('lastOpenDate');

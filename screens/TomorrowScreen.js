@@ -414,6 +414,20 @@ const filterTomorrowReminders = (reminders) => {
     saveTomorrowTasks();
   }, [blocks]);
 
+  useEffect(() => {
+    // Load tasks initially and whenever the `reminderUpdated` event is emitted
+    const handleReminderUpdate = () => {
+      loadTomorrowTasks();
+    };
+  
+    eventEmitter.on('reminderUpdated', handleReminderUpdate);
+  
+    return () => {
+      // Clean up event listener when the component unmounts
+      eventEmitter.off('reminderUpdated', handleReminderUpdate);
+    };
+  }, [loadTomorrowTasks]);
+
   const saveHistory = () => {
     setHistory([...history, blocks]);
     setFuture([]);

@@ -143,6 +143,25 @@ const TodayScreen = ({ todayTaskUpdated }) => {
     }
   }, []);
 
+  const loadRoutineForTomorrow = useCallback(async () => {
+    const currentTime = new Date();
+    const currentHour = currentTime.getHours();
+    let nextDay = new Date();
+  
+    if (currentHour >= 12) {
+      // Later half of the day, read from the next weekday's routine
+      nextDay.setDate(nextDay.getDate() + 1);
+    }
+  
+    const weekday = nextDay.toLocaleDateString('en-US', { weekday: 'long' });
+  
+    const routine = await AsyncStorage.getItem(`routine${weekday}`);
+    if (routine) {
+      await AsyncStorage.setItem('tomorrowTasks', routine);
+    }
+  }, []);
+  
+
   useEffect(() => {
   const loadTodayTasks = async () => {
     const storedBlocks = await AsyncStorage.getItem('todayTasks');
@@ -602,12 +621,28 @@ const handleSplit = () => {
   }
 };
 
-  const handleReset = () => {
-    saveHistory(); // Save the current state before resetting
-    const clearedBlocks = blocks.map(block => ({ ...block, title: '', description: '', priority: 'none' }));
-    setBlocks(clearedBlocks);
-    setResetConfirmationVisible(false); // Close the confirmation modal after reset
-  };
+const handleReset = async () => {
+  setResetConfirmationVisible(false);
+
+  // Move tasks from tomorrow to today and load routine for tomorrow
+  await moveTasksToToday();
+  await loadRoutineForTomorrow();
+
+  // Reload tasks into state from AsyncStorage to reflect changes immediately
+  const updatedTodayTasks = await AsyncStorage.getItem('todayTasks');
+  const updatedTomorrowTasks = await AsyncStorage.getItem('tomorrowTasks');
+
+  if (updatedTodayTasks) {
+    setBlocks(JSON.parse(updatedTodayTasks)); // Update state to trigger re-render
+  }
+
+  if (updatedTomorrowTasks) {
+    eventEmitter.emit('reminderUpdated'); // Emit an event to refresh reminders or tasks view
+  }
+
+  console.log('Routine reset complete, tasks moved and reloaded.');
+};
+
   
   const confirmReset = () => {
     setResetConfirmationVisible(true);
@@ -699,7 +734,7 @@ const handleSplit = () => {
         <TouchableOpacity onPress={() => setSettingsVisible(true)}>
           <Icon name="settings" size={30} color="#1E8AFF" />
         </TouchableOpacity>
-        <Button title="Reset" onPress={confirmReset}/>
+        <Button title="Load" onPress={confirmReset}/>
         <Button title="↺" onPress={handleUndo} disabled={history.length === 0} />
         <Button title="↻" onPress={handleRestore} disabled={future.length === 0} />
         <Button title={isSelecting ? "Cancel Select" : "Select"} onPress={toggleSelectMode} />
@@ -830,7 +865,7 @@ const handleSplit = () => {
       <Modal visible={resetConfirmationVisible} transparent={true} animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.confirmationModal}>
-            <Text style={styles.modalText}>This will reset the routine for tomorrow.</Text>
+            <Text style={styles.modalText}>This will load the routine for tomorrow.</Text>
             <View style={styles.modalButtons}>
               <Button title="Confirm" onPress={handleReset} />
               <Button title="Cancel" onPress={cancelReset} color="red" />

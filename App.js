@@ -1,3 +1,5 @@
+// App.js
+
 import React, { useEffect, useState, useCallback } from 'react';
 import { PrioritiesProvider } from './components/PrioritiesContext';
 import { NavigationContainer } from '@react-navigation/native';
@@ -18,8 +20,6 @@ const Tab = createBottomTabNavigator();
 export default function App() {
   const [todayTaskUpdated, setTodayTaskUpdated] = useState(false);
   const [tomorrowTaskUpdated, setTomorrowTaskUpdated] = useState(false);
-  const [isInitialized, setIsInitialized] = useState(false); // Local state to ensure one-time execution
-
   const today = new Date();
   const tomorrow = new Date(today);
   tomorrow.setDate(today.getDate() + 1);
@@ -47,49 +47,46 @@ export default function App() {
     const nextDay = new Date();
     nextDay.setDate(nextDay.getDate() + 1);
     const weekday = nextDay.toLocaleDateString('en-US', { weekday: 'long' });
-  
+
     const routine = await AsyncStorage.getItem(`routine${weekday}`);
     if (routine) {
       await AsyncStorage.setItem('tomorrowTasks', routine);    // Load routine for tomorrow
       setTomorrowTaskUpdated((prev) => !prev);                 // Only trigger TomorrowScreen update
     }
-  }, []);
+  }, []);  
 
-  // Function to check if it's the first app open of the day
-  const checkFirstOpenOfDay = useCallback(async () => {
-    const todayString = today.toISOString().split('T')[0]; // Format as YYYY-MM-DD
-
-    // Retrieve the last open date and check flag from AsyncStorage
-    const lastOpenDate = await AsyncStorage.getItem('lastOpenDate');
-    const hasRefreshedToday = await AsyncStorage.getItem('hasRefreshedToday');
-
-    // If it's a new day or if the refresh flag hasn't been set, refresh tasks
-    if (lastOpenDate !== todayString || hasRefreshedToday !== 'true') {
-      await moveTasksToToday();
-      await loadRoutineForTomorrow();
-
-      // Update the last open date and set the refresh flag in AsyncStorage
-      await AsyncStorage.multiSet([
-        ['lastOpenDate', todayString],
-        ['hasRefreshedToday', 'true'],
-      ]);
+  // Run `moveTasksToToday` at a specific time
+useEffect(() => {
+  const checkMoveTasks = () => {
+    const now = new Date();
+    if (now.getHours() === 0 && now.getMinutes() >= 1 && now.getMinutes() <= 2) {
+      moveTasksToToday();
     }
-  }, [moveTasksToToday, loadRoutineForTomorrow, today]);
+  };
 
-  // Run checkFirstOpenOfDay only once when the app loads
-  useEffect(() => {
-    if (!isInitialized) {
-      checkFirstOpenOfDay();
-      setIsInitialized(true); // Ensure that it only runs once on the initial load
+  const moveInterval = setInterval(checkMoveTasks, 60000); // Check every minute
+  return () => clearInterval(moveInterval); // Cleanup on unmount
+}, [moveTasksToToday]);
+
+// Run `loadRoutineForTomorrow` at a specific time
+useEffect(() => {
+  const checkLoadRoutine = () => {
+    const now = new Date();
+    if (now.getHours() === 0 && now.getMinutes() >= 3 && now.getMinutes() <= 4) {
+      loadRoutineForTomorrow();
     }
-  }, [checkFirstOpenOfDay, isInitialized]);
+  };
+
+  const routineInterval = setInterval(checkLoadRoutine, 60000); // Check every minute
+  return () => clearInterval(routineInterval); // Cleanup on unmount
+}, [loadRoutineForTomorrow]);
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <StatusBar barStyle="dark-content" backgroundColor="#ffffff" />
       <PrioritiesProvider>
         <NavigationContainer>
-          <Tab.Navigator
+        <Tab.Navigator
             screenOptions={({ route }) => ({
               tabBarIcon: ({ color, size }) => {
                 if (route.name === 'Today') {

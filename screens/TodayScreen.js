@@ -131,7 +131,7 @@ const TodayScreen = ({ todayTaskUpdated }) => {
 
   const [timeInterval, setTimeInterval] = useState(15);
   const prevIntervalRef = useRef(timeInterval);
-  const [resetConfirmationVisible, setResetConfirmationVisible] = useState(false); // Confirmation modal visibility
+  const [loadConfirmationVisible, setLoadConfirmationVisible] = useState(false); // Confirmation modal visibility
   const [newUrgent, setNewUrgent] = useState(false);
   const [newImportant, setNewImportant] = useState(false);
 
@@ -621,8 +621,8 @@ const handleSplit = () => {
   }
 };
 
-const handleReset = async () => {
-  setResetConfirmationVisible(false);
+const handleLoad = async () => {
+  setLoadConfirmationVisible(false);
 
   // Move tasks from tomorrow to today and load routine for tomorrow
   await moveTasksToToday();
@@ -639,17 +639,15 @@ const handleReset = async () => {
   if (updatedTomorrowTasks) {
     eventEmitter.emit('reminderUpdated'); // Emit an event to refresh reminders or tasks view
   }
-
-  console.log('Routine reset complete, tasks moved and reloaded.');
 };
 
   
-  const confirmReset = () => {
-    setResetConfirmationVisible(true);
+  const confirmLoad = () => {
+    setLoadConfirmationVisible(true);
   };
   
-  const cancelReset = () => {
-    setResetConfirmationVisible(false);
+  const cancelLoad = () => {
+    setLoadConfirmationVisible(false);
   };
 
   const handleAddTodo = (newTask) => {
@@ -734,7 +732,7 @@ const handleReset = async () => {
         <TouchableOpacity onPress={() => setSettingsVisible(true)}>
           <Icon name="settings" size={30} color="#1E8AFF" />
         </TouchableOpacity>
-        <Button title="Load" onPress={confirmReset}/>
+        <Button title="Load" onPress={confirmLoad}/>
         <Button title="↺" onPress={handleUndo} disabled={history.length === 0} />
         <Button title="↻" onPress={handleRestore} disabled={future.length === 0} />
         <Button title={isSelecting ? "Cancel Select" : "Select"} onPress={toggleSelectMode} />
@@ -862,13 +860,13 @@ const handleReset = async () => {
         initialPriority={entryBlock?.priority}
         customPriorities={customPriorities}
       />
-      <Modal visible={resetConfirmationVisible} transparent={true} animationType="slide">
+      <Modal visible={loadConfirmationVisible} transparent={true} animationType="slide">
         <View style={styles.modalOverlay}>
           <View style={styles.confirmationModal}>
             <Text style={styles.modalText}>This will load the routine for tomorrow.</Text>
             <View style={styles.modalButtons}>
-              <Button title="Confirm" onPress={handleReset} />
-              <Button title="Cancel" onPress={cancelReset} color="red" />
+              <Button title="Confirm" onPress={handleLoad} />
+              <Button title="Cancel" onPress={cancelLoad} color="red" />
             </View>
           </View>
         </View>

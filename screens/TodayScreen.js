@@ -147,6 +147,7 @@ const TodayScreen = ({ todayTaskUpdated }) => {
     const currentTime = new Date();
     const currentHour = currentTime.getHours();
     let nextDay = new Date();
+    nextDay.setDate(nextDay.getDate() + 1);
   
     if (currentHour >= 12) {
       // Later half of the day, read from the next weekday's routine

@@ -1076,7 +1076,7 @@ const styles = StyleSheet.create({
     height: 24,
     width: 24,
     textAlign: 'center',
-    lineHeight: 24, // Center text vertically
+    lineHeight: 18, // Center text vertically
     borderRadius: 8, // Fully rounded
     marginLeft: 6, // Space between title and tag
     alignItems: 'center',
